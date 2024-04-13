@@ -1,0 +1,68 @@
+
+from datetime import datetime
+
+import numpy as np
+from PIL import Image
+
+from Coordinates import Coordinates
+from Coordinates import RelativePosition
+from Plate import Plate
+from Globe import Globe
+from PlateMasks import PlateMasks
+
+#%%
+def cmap(nindex):
+    return [nindex,
+            4*(nindex-0.5)**2,
+            (1-nindex) + nindex/100000*47]
+            #-16*nindex**3 + 24*nindex**2 - 9*nindex + 1]
+
+#%%
+class Poster:
+    def __init__(self, resolution):
+        self.resolution = resolution
+        self.globes = []
+        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)
+        self.masks = PlateMasks()
+
+        print('Creating globes')
+        for plate_index in range(0, self.masks.number_of_plates):
+            self.globes.append(Globe(plate_index, self.masks.masks))
+
+    def render(self):
+        # Go through every pixel in the poster, and determine the color of the pixel
+        print('\nRendering image')
+        for x in range(self.resolution[0]):
+            # Print the progress
+            print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
+            for y in range(self.resolution[1]):
+                relative_pixel_position = RelativePosition(x/self.resolution[1], y/self.resolution[1])
+                self.poster_pixels[x , y] = self.calculate_pixel_color(relative_pixel_position)
+        print('\n')        
+        self.save_image()
+        print('Image saved')
+
+    def calculate_pixel_color(self, relative_pixel_position):
+        for globe in self.globes:
+            if globe.pixel_on_plate(relative_pixel_position):
+                nindex = globe.plate_index/len(self.globes)
+                return cmap(nindex)
+                        
+    def save_image(self):
+        # Normalize the pixel values to 0-255 range for image saving
+        normalized_pixels = (self.poster_pixels * 255).astype(np.uint8)
+
+        # Transpose the array for correct orientation
+        transposed_pixels = np.transpose(normalized_pixels, (1, 0, 2))
+        
+        image = Image.fromarray(transposed_pixels, 'RGB')
+
+        # Add a timestamp to the filename
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        image.save(f'poster_image_{timestamp}.png')
+
+   
+    
+        
+
+# %%
