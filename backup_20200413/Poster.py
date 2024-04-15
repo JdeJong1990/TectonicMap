@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 
 from Coordinates import Coordinates
-from Coordinates import PixelPosition
 from Coordinates import RelativePosition
 from Plate import Plate
 from Globe import Globe
@@ -25,11 +24,10 @@ class Poster:
         self.globes = []
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)
         self.masks = PlateMasks()
-        self.relative_radius = 0.25
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
-            self.globes.append(Globe(plate_index, self.masks.masks, radius_in_pixels = self.resolution[1]*self.relative_radius))
+            self.globes.append(Globe(plate_index, self.masks.masks))
 
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
@@ -37,18 +35,16 @@ class Poster:
         for x in range(self.resolution[0]):
             # Print the progress
             print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
-
             for y in range(self.resolution[1]):
-                pixel_position = PixelPosition(x, y)
-                self.poster_pixels[x , y] = self.calculate_pixel_color(pixel_position)
+                relative_pixel_position = RelativePosition(x/self.resolution[1], y/self.resolution[1])
+                self.poster_pixels[x , y] = self.calculate_pixel_color(relative_pixel_position)
         print('\n')        
         self.save_image()
         print('Image saved')
 
-    def calculate_pixel_color(self, poster_pixel_position):
+    def calculate_pixel_color(self, relative_pixel_position):
         for globe in self.globes:
-            centered_pixel_position = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1]
-            if globe.pixel_on_plate(centered_pixel_position):
+            if globe.pixel_on_plate(relative_pixel_position):
                 nindex = globe.plate_index/len(self.globes)
                 return cmap(nindex)
                         

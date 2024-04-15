@@ -43,5 +43,6 @@ class Plate:
         latitude_rad = np.arcsin(vector[2] / np.linalg.norm(vector))
         return Coordinates(longitude_rad, latitude_rad)
 
+print("plate.py loaded")
 
 # %%

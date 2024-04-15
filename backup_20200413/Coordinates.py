@@ -30,7 +30,3 @@ class RelativePosition:
     def to_magnitude(self):
         return np.sqrt(self.x**2 + self.y**2)
     
-class PixelPosition:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y

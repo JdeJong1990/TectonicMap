@@ -1,44 +1,40 @@
 import numpy as np
 
 from Coordinates import Coordinates
-from Coordinates import RelativePosition
 from Plate import Plate
 
 class Globe: 
-    def __init__(self, plate_index, masks, radius_in_pixels):
-        print(f'\r[
-              {"#" * (      plate_index // (46 // 20))}
-              {" " * (20 - (plate_index // (46 // 20)))}] 
-              {plate_index/(47 - 1)*100+1.0:.1f}%', end='')
-    
+    def __init__(self, plate_index, masks, relative_radius = 0.25):
+        print(f'\r[{"#" * (plate_index // (46 // 20))}{" " * (20 - (plate_index // (46 // 20)))}] {plate_index/(np.max(masks) - 1)*100+1.0:.1f}%', end='')
+            
+        #print(f"Creating globe with plate index {plate_index}")
         self.plate_index = plate_index
-        self.radius_in_pixels = radius_in_pixels
+        self.relative_radius = relative_radius
 
-        self.plate = Plate(masks == plate_index)        # this is a mask with a center coordinate
+        self.plate = Plate(masks == plate_index)
         self.plate_coordinate = self.plate.center_coordinate
-        self.relative_center_on_poster = self.plate_coordinate.to_relative_position()
+        self.relative_center_on_poster = None
 
-        self.radius_in_pixels = radius_in_pixels
-        self.globe_mask = np.zeros((int(2 * radius_in_pixels), int(2 * radius_in_pixels), 3), dtype=np.float32)      # this is a mask the size of the globe
+        self.calculate_position_on_poster()
 
-        self.make_globe_mask()
-
-    def make_globe_mask(self):
-        for x in range(int(2 * self.radius_in_pixels)):
-            for y in range(int(2 * self.radius_in_pixels)):
-                centered_globe_position = RelativePosition(x / (2 * self.radius_in_pixels)*2 - 1, y/(2 * self.radius_in_pixels)*2 - 1)
-                self.globe_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
+    def calculate_position_on_poster(self):
+        plate_coordinate = self.plate_coordinate
+        self.relative_center_on_poster = plate_coordinate.to_relative_position()
     
+    def pixel_on_plate(self, relative_pixel_position):
+        centered_globe_position = (relative_pixel_position - self.relative_center_on_poster)
+        if self.is_pixel_on_globe(centered_globe_position):
+            return self.globe_position_is_on_plate(centered_globe_position)
+
+    def is_pixel_on_globe(self, centered_globe_position):
+        distance_from_globe_center = centered_globe_position.to_magnitude()
+        return distance_from_globe_center <= self.relative_radius
+
     def globe_position_is_on_plate(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
         # Convert the relative globe position to a 3D vector
 
-        squared_z_component  = 1 - centered_globe_position.x**2 - centered_globe_position.y**2
-
-        if squared_z_component  < 0:
-            return False
-        
-        vector = np.array([np.sqrt(squared_z_component ),
+        vector = np.array([np.sqrt(self.relative_radius**2 - centered_globe_position.x**2 - centered_globe_position.y**2),
                            centered_globe_position.x, 
                            -centered_globe_position.y])
         
@@ -75,10 +71,4 @@ class Globe:
         longitude_rad = np.arctan2(vector[1], vector[0])
         latitude_rad = np.arcsin(vector[2] / np.linalg.norm(vector))
         return Coordinates(longitude_rad, latitude_rad)
-    
-    def pixel_on_plate(self, relative_pixel_position):
-        relative_position_on_globe = relative_pixel_position - self.relative_center_on_poster
-        # Check if the pixel is on the plate
-        return self.globe_mask[int(relative_pixel_position.x*self.radius_in_pixels), 
-                               int(relative_pixel_position.y*self.radius_in_pixels)]
  
