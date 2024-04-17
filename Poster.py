@@ -11,11 +11,7 @@ from Plate import Plate
 from Globe import Globe
 from PlateMasks import PlateMasks
 
-def cmap(nindex):
-    return [nindex,
-            4*(nindex-0.5)**2,
-            (1-nindex) + nindex/100000*47]
-            #-16*nindex**3 + 24*nindex**2 - 9*nindex + 1]
+
 
 class Poster:
     def __init__(self, resolution):
@@ -27,7 +23,7 @@ class Poster:
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
-            self.globes.append(Globe(plate_index, self.masks.masks, radius_in_pixels = self.resolution[1]*self.relative_radius))
+            self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
 
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
@@ -37,19 +33,22 @@ class Poster:
             print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
 
             for y in range(self.resolution[1]):
-                pixel_position = PixelPosition(x, y)
-                self.poster_pixels[x , y] = self.calculate_pixel_color(pixel_position)
+                poster_pixel_position = PixelPosition(x, y)
+                self.calculate_pixel_layers(poster_pixel_position)
         print('\n')        
         self.save_image()
         print('Image saved')
 
-    def calculate_pixel_color(self, poster_pixel_position):
+    def calculate_pixel_layers(self, poster_pixel_position):
         for globe in self.globes:
-            centered_pixel_position = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1]
-            if globe.pixel_on_plate(centered_pixel_position):
-                nindex = globe.plate_index/len(self.globes)
-                return cmap(nindex)
-                        
+            position_on_globe_mask = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1]
+            if globe.is_on_plate(position_on_globe_mask):
+                layer_pixels = globe.calculate_pixel(position_on_globe_mask)
+                self.fill_layers_with_pixels(layer_pixels)
+    
+    def fill_layers_with_pixels(self, layer_pixels):
+        self.poster_pixels = layer_pixels.color
+            
     def save_image(self):
         # Normalize the pixel values to 0-255 range for image saving
         normalized_pixels = (self.poster_pixels * 255).astype(np.uint8)
@@ -62,3 +61,8 @@ class Poster:
         # Add a timestamp to the filename for unique filenames
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         image.save(f'poster_image_{timestamp}.png')
+
+    def cmap(nindex):
+        return [nindex,
+                4*(nindex-0.5)**2,
+                (1-nindex)]
