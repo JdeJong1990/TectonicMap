@@ -7,20 +7,14 @@ from Plate import Plate
 
 class Globe: 
     def __init__(self, mask, radius_in_pixels):
-        print(f'\r[
-              {"#" * (      plate_index // (46 // 20))}
-              {" " * (20 - (plate_index // (46 // 20)))}] 
-              {plate_index/(47 - 1)*100+1.0:.1f}%', end='') # Print the progress
-    
         self.radius_in_pixels = radius_in_pixels
 
         self.plate = Plate(mask)        # this is an object consisting of a mask  with a center coordinate
         self.plate_coordinate = self.plate.center_coordinate
         self.relative_center_on_poster = self.plate_coordinate.to_relative_position()
 
-        self.globe_plate_mask = np.zeros((int(2 * radius_in_pixels), int(2 * radius_in_pixels), 3), dtype=np.float32)      # this is a mask the size of the globe
-
-        self.make_globe_mask()
+        self.globe_plate_mask = np.zeros((int(2 * radius_in_pixels), int(2 * radius_in_pixels)), dtype=np.float32)      # this is a mask the size of the globe
+        self.make_globe_plate_mask()
 
     def make_globe_plate_mask(self):
         for x in range(int(2 * self.radius_in_pixels)):
@@ -83,8 +77,7 @@ class Globe:
     
     def is_on_plate(self, position_on_globe_mask):
         if self.position_is_on_globe_mask(position_on_globe_mask):
-            return self.globe_plate_mask[int(position_on_globe_mask.x*self.radius_in_pixels), 
-                                     int(position_on_globe_mask.y*self.radius_in_pixels)]
+            return self.globe_plate_mask[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         else:
             return False
     

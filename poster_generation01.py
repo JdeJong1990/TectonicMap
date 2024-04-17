@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from Poster import Poster
 #%%
-poster = Poster([200 , 400])
+poster = Poster([60 , 30])
 
 # poster.globes.append(Globe(plate_index = 1)) 
 

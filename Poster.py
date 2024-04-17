@@ -24,6 +24,9 @@ class Poster:
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
             self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
+            
+            # Print the progress
+            print(f'\r[{"#" * (      plate_index // (46 // 20))}{" " * (20 - (plate_index // (46 // 20)))}] {plate_index/(47 - 1)*100+1.0:.1f}%', end='') 
 
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
@@ -54,9 +57,9 @@ class Poster:
         normalized_pixels = (self.poster_pixels * 255).astype(np.uint8)
 
         # Transpose the array for correct orientation
-        transposed_pixels = np.transpose(normalized_pixels, (1, 0, 2))
+        #transposed_pixels = np.transpose(normalized_pixels, (1, 0, 2))
         
-        image = Image.fromarray(transposed_pixels, 'RGB')
+        image = Image.fromarray(normalized_pixels, 'RGB')
 
         # Add a timestamp to the filename for unique filenames
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
