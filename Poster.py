@@ -1,5 +1,6 @@
 
 from datetime import datetime
+import os
 
 import numpy as np
 from PIL import Image
@@ -10,8 +11,6 @@ from Coordinates import RelativePosition
 from Plate import Plate
 from Globe import Globe
 from PlateMasks import PlateMasks
-
-
 
 class Poster:
     def __init__(self, resolution):
@@ -46,7 +45,7 @@ class Poster:
 
     def calculate_pixel_layers(self, poster_pixel_position):
         for globe in self.globes:
-            position_on_globe_mask = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1]
+            position_on_globe_mask = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels)
             if globe.is_on_plate(position_on_globe_mask):
                 layer_pixels = globe.calculate_pixel(position_on_globe_mask)
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
@@ -59,13 +58,29 @@ class Poster:
         normalized_pixels = (self.poster_pixels * 255).astype(np.uint8)
 
         image = Image.fromarray(normalized_pixels, 'RGB')
-
+        
         # Rotate the image 90 degrees clockwise
         image = image.transpose(Image.ROTATE_270)
 
+        # Flip the image horizontally
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+
         # Add a timestamp to the filename for unique filenames
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        image.save(f'poster_image_{timestamp}.png')
+
+        # Define the path to save the image
+        # os.path.pardir returns the parent directory ('..')
+        save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir, 'images')
+    
+        # Ensure the directory exists, if not, create it
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
+         # Full path for saving the image
+        full_save_path = os.path.join(save_path, f'poster_image_{timestamp}.png')
+        
+        # Save the image
+        image.save(full_save_path)
 
     def cmap(nindex):
         return [nindex,
