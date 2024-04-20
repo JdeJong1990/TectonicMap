@@ -13,14 +13,39 @@ class Globe:
         self.plate_coordinate = self.plate.center_coordinate
         self.relative_center_on_poster = self.plate_coordinate.to_relative_position()
 
-        self.globe_plate_mask = np.zeros((int(2 * radius_in_pixels), int(2 * radius_in_pixels)), dtype=np.float32)      # this is a mask the size of the globe
-        self.make_globe_plate_mask()
+        self.globe_plate_mask = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), False)
+        self.normal_map = self.initialize_map_3(1, 0, 0)
 
-    def make_globe_plate_mask(self):
+        self.make_globe_layers()
+
+    def initialize_map_3(self, first_value, second_value, third_value):
+        map = np.zeros((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), dtype=np.float32)      # this is a mask the size of the globe
+        map[..., 0] = first_value
+        map[..., 1] = second_value
+        map[..., 2] = third_value
+        return map
+
+    def make_globe_layers(self):
         for x in range(int(2 * self.radius_in_pixels)):
             for y in range(int(2 * self.radius_in_pixels)):
                 centered_globe_position = RelativePosition(x / (2 * self.radius_in_pixels)*2 - 1, y/(2 * self.radius_in_pixels)*2 - 1)
+                self.normal_map[x, y] = self.calculate_normal_vector(centered_globe_position)
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
+    
+    def calculate_normal_vector(self, centered_globe_position):
+        # A range of -1 to 1 is used to represent the globe for x and y
+
+        squared_z_component  = 1 - centered_globe_position.x**2 - centered_globe_position.y**2
+
+        if squared_z_component  < 0:        # this is a check to see if the point is on the globe
+            return np.array([1.0 , 0.0 , 0.0])
+        else:
+            normal_vector = np.array([np.sqrt(squared_z_component), 
+                                        centered_globe_position.x, 
+                                        -centered_globe_position.y])
+
+            normal_vector = normal_vector / np.linalg.norm(normal_vector)
+            return normal_vector
 
     def globe_position_is_on_plate(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
@@ -87,4 +112,5 @@ class Globe:
     def calculate_pixel(self, position_on_globe_mask):
         pixel_object = LayerPixels()
         pixel_object.color = np.array([1.0, 1.0, 1.0])
+        pixel_object.normal_vector = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         return pixel_object

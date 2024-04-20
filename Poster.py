@@ -20,6 +20,7 @@ class Poster:
         self.poster_pixels = np.zeros((resolution[0], resolution[1], 3), dtype=np.uint8)
         self.masks = PlateMasks()
         self.relative_radius = 0.25
+        self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
@@ -41,7 +42,6 @@ class Poster:
 
         print('\n')        
         self.save_image()
-        print('Image saved')
 
     def calculate_pixel_layers(self, poster_pixel_position):
         for globe in self.globes:
@@ -51,36 +51,37 @@ class Poster:
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
     
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
-        self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
-            
+        lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
+        color = layer_pixels.color*lighting_factor*255
+        self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
+
     def save_image(self):
-        # Normalize the pixel values to 0-255 range for image saving
-        normalized_pixels = (self.poster_pixels * 255).astype(np.uint8)
+        """
+        Saves the RGB image, ensuring all pixel values are clipped within the valid range
+        for an 8-bit image (0 to 255). This clipping maintains the integrity of the image's appearance by
+        preventing underflow and overflow of color values.
+        """ 
+        # Ensure all pixel values are within the 0 to 255 range
+        clipped_pixels = np.clip(self.poster_pixels, 0, 255)
+        clipped_pixels = clipped_pixels.astype(np.uint8)
 
-        image = Image.fromarray(normalized_pixels, 'RGB')
+        # Create an RGB image from the clipped pixel data
+        image = Image.fromarray(clipped_pixels, 'RGB')
+
+        image = image.transpose(Image.TRANSPOSE)
         
-        # Rotate the image 90 degrees clockwise
-        image = image.transpose(Image.ROTATE_270)
-
-        # Flip the image horizontally
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)
-
-        # Add a timestamp to the filename for unique filenames
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-
-        # Define the path to save the image
-        # os.path.pardir returns the parent directory ('..')
         save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir, 'images')
     
-        # Ensure the directory exists, if not, create it
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         
-         # Full path for saving the image
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         full_save_path = os.path.join(save_path, f'poster_image_{timestamp}.png')
         
         # Save the image
         image.save(full_save_path)
+
+        print('Image saved')
 
     def cmap(nindex):
         return [nindex,
