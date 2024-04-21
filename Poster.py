@@ -17,10 +17,11 @@ class Poster:
         """Initialize the poster with a specific resolution."""
         self.resolution = resolution
         self.globes = []
-        self.poster_pixels = np.zeros((resolution[0], resolution[1], 3), dtype=np.uint8)
+        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
         self.masks = PlateMasks()
         self.relative_radius = 0.25
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
+        self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
@@ -41,7 +42,6 @@ class Poster:
             print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
 
         print('\n')        
-        self.save_image()
 
     def calculate_pixel_layers(self, poster_pixel_position):
         for globe in self.globes:
@@ -54,12 +54,12 @@ class Poster:
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
         color = layer_pixels.color*lighting_factor*255
         self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
+        self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
 
     def save_image(self):
         """
         Saves the RGB image, ensuring all pixel values are clipped within the valid range
-        for an 8-bit image (0 to 255). This clipping maintains the integrity of the image's appearance by
-        preventing underflow and overflow of color values.
+        for an 8-bit image (0 to 255). 
         """ 
         # Ensure all pixel values are within the 0 to 255 range
         clipped_pixels = np.clip(self.poster_pixels, 0, 255)
