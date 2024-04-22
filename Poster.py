@@ -18,6 +18,9 @@ class Poster:
         self.resolution = resolution
         self.globes = []
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
+        self.poster_pixels[:,:,0] = 135
+        self.poster_pixels[:,:,1] = 206
+        self.poster_pixels[:,:,2] = 235
         self.masks = PlateMasks()
         self.relative_radius = 0.25
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3

@@ -4,7 +4,7 @@ from PIL import Image
 import os
 
 class PlateMasks:
-    masks_folder = "E:/Hobbie/tectonic_poster/tectonic_plates_project"
+    masks_folder = os.path.join(os.path.dirname(os.getcwd()), "tectonic_plates_project")
     
     def __init__(self, masks_name = "test03_NoLines.png"):
         self.masks_name = masks_name
