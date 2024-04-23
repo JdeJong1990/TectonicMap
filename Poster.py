@@ -8,6 +8,7 @@ from PIL import Image
 from Coordinates import Coordinates
 from Coordinates import PixelPosition
 from Coordinates import RelativePosition
+
 from Plate import Plate
 from Globe import Globe
 from PlateMasks import PlateMasks
@@ -22,6 +23,7 @@ class Poster:
         self.poster_pixels[:,:,1] = 206
         self.poster_pixels[:,:,2] = 235
         self.masks = PlateMasks()
+        
         self.relative_radius = 0.25
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
