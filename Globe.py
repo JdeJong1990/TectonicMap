@@ -2,14 +2,13 @@ import numpy as np
 
 from Coordinates import Coordinates
 from Coordinates import RelativePosition
-from DigitalElevationModel import DigitalElevationModel
-from ColorMap import ColorMap
+from ImportImage import ImportImage
 from LayerPixels import LayerPixels
 from Plate import Plate
 
 class Globe: 
-    elevation_model = DigitalElevationModel()
-    color_map = ColorMap()
+    elevation_model = ImportImage(file_name = "DEM_earth.png")
+    color_file = ImportImage(file_name = "true_color01.png")
 
     def __init__(self, mask, radius_in_pixels):
         self.radius_in_pixels = radius_in_pixels
@@ -20,7 +19,7 @@ class Globe:
 
         self.globe_plate_mask = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), False)
         self.normal_map = self.initialize_map_3(1, 0, 0)
-        self.color_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0)
+        self.color_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), 0)
 
         self.make_globe_layers()
 
@@ -34,11 +33,11 @@ class Globe:
     def make_globe_layers(self):
         for x in range(int(2 * self.radius_in_pixels)):
             for y in range(int(2 * self.radius_in_pixels)):
-                centered_globe_position = RelativePosition(x / (2 * self.radius_in_pixels)*2 - 1, y/(2 * self.radius_in_pixels)*2 - 1)
+                centered_globe_position = RelativePosition( x/self.radius_in_pixels -1 , y/self.radius_in_pixels - 1)
                 self.normal_map[x, y] = self.calculate_normal_vector(centered_globe_position)
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
 
-                self.color_map[x, y] = self.calculate_color(centered_globe_position)
+                self.color_map[x, y, :] = self.calculate_color(centered_globe_position)
     
     def calculate_normal_vector(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
@@ -104,8 +103,9 @@ class Globe:
         
         # Check if the pixel is on the plate
         #print(f"Globe color image shape{Globe.elevation_model.color_image.shape}, relative_position: {relative_position.x},{relative_position.y}")
-        return Globe.color_map.color_image[int(relative_position.x*Globe.color_map.color_image.shape[1]), 
-                                           int(relative_position.y*Globe.color_map.color_image.shape[1])]
+        return Globe.color_file.color_image[int(relative_position.x*Globe.color_file.color_image.shape[1]), 
+                                             int(relative_position.y*Globe.color_file.color_image.shape[1]),
+                                             :]
 
     def rotate_theta_phi(self, vector, plate_coordinate):
         longitude = plate_coordinate.longitude
@@ -146,7 +146,7 @@ class Globe:
     def calculate_pixel(self, position_on_globe_mask):
         pixel_object = LayerPixels()
 
-        pixel_object.color = np.array([1.0, 1.0, 1.0]) * Globe.color_map.color_image[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
+        pixel_object.color = np.array([1.0, 1.0, 1.0]) * self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
 
         pixel_object.height = np.sqrt(self.radius_in_pixels**2
                                     - (position_on_globe_mask.x - self.radius_in_pixels)**2 

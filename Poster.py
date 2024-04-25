@@ -58,7 +58,7 @@ class Poster:
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
 
-        color = layer_pixels.color*lighting_factor*8.0
+        color = layer_pixels.color*lighting_factor
         self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
 
