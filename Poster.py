@@ -17,16 +17,22 @@ class Poster:
     def __init__(self, resolution):
         """Initialize the poster with a specific resolution."""
         self.resolution = resolution
+        self.relative_radius = 0.25
         self.globes = []
+
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
         self.poster_pixels[:,:,0] = 135
         self.poster_pixels[:,:,1] = 206
         self.poster_pixels[:,:,2] = 235
-        self.masks = PlateMasks()
         
-        self.relative_radius = 0.25
+        self.masks = PlateMasks()
+
+        self.normal_map = np.zeros((resolution[0], resolution[1], 3))
+        self.normal_map[:,:,0] = 1
+
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+        
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
@@ -57,10 +63,12 @@ class Poster:
     
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
-
+        print(lighting_factor)
         color = layer_pixels.color*lighting_factor
-        self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
+
+        self.normal_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.normal_vector
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
+        self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
 
     def save_image(self):
         """
@@ -88,8 +96,3 @@ class Poster:
         image.save(full_save_path)
 
         print('Image saved')
-
-    def cmap(nindex):
-        return [nindex,
-                4*(nindex-0.5)**2,
-                (1-nindex)]

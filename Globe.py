@@ -146,8 +146,8 @@ class Globe:
     def calculate_pixel(self, position_on_globe_mask):
         pixel_object = LayerPixels()
 
-        pixel_object.color = np.array([1.0, 1.0, 1.0]) * self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
-
+        pixel_object.normal_vector = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
+        pixel_object.color         =  self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
         pixel_object.height = np.sqrt(self.radius_in_pixels**2
                                     - (position_on_globe_mask.x - self.radius_in_pixels)**2 
                                     - (position_on_globe_mask.y - self.radius_in_pixels)**2)-4.9
