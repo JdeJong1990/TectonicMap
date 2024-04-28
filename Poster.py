@@ -9,9 +9,9 @@ from Coordinates import Coordinates
 from Coordinates import PixelPosition
 from Coordinates import RelativePosition
 
-from Plate import Plate
 from Globe import Globe
 from PlateMasks import PlateMasks
+from scipy.ndimage import gaussian_filter
 
 class Poster:
     def __init__(self, resolution):
@@ -20,26 +20,31 @@ class Poster:
         self.relative_radius = 0.25
         self.globes = []
 
-        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
-        self.poster_pixels[:,:,0] = 135
-        self.poster_pixels[:,:,1] = 206
-        self.poster_pixels[:,:,2] = 235
+        self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
+
+        self.color_map = np.zeros((resolution[0], resolution[1], 3), dtype=np.uint8)*255
+        # self.color_map[:,:,0] = 135
+        # self.color_map[:,:,1] = 206
+        # self.color_map[:,:,2] = 235
         
         self.masks = PlateMasks()
 
         self.normal_map = np.zeros((resolution[0], resolution[1], 3))
         self.normal_map[:,:,0] = 1
 
-        self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         
+        self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+        self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+
+        self.poster_pixels = np.zeros((resolution[0], resolution[1], 3), dtype=np.float32)
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
             self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
             
             # Print the progress
-            print(f'\r[{"#" * (      plate_index // (46 // 20))}{" " * (20 - (plate_index // (46 // 20)))}] {plate_index/(47 - 1)*100+1.0:.1f}%', end='') 
+            print(f'\r[{"#" * (plate_index * 25 // (self.masks.number_of_plates - 1))}{" " * (25 - (plate_index * 25 // (self.masks.number_of_plates - 1)))}] {plate_index/(self.masks.number_of_plates - 1)*100:.1f}%', end='')
 
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
@@ -52,23 +57,36 @@ class Poster:
             # Print the progress
             print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
 
-        print('\n')        
+        print('\n')   
+
+        self.calculate_ambient_occlusion()     
+        self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
         for globe in self.globes:
-            position_on_globe_mask = poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels)
+            position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
+                                       - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
             if globe.is_on_plate(position_on_globe_mask):
-                layer_pixels = globe.calculate_pixel(position_on_globe_mask)
+                layer_pixels = globe.calculate_pixel(position_on_globe_mask)        # pixel object
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
     
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
-
-        color = layer_pixels.color*lighting_factor
-
+        self.direct_lighting = lighting_factor
+        
         self.normal_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.normal_vector
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
-        self.poster_pixels[poster_pixel_position.x,poster_pixel_position.y] = color
+        self.color_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
+
+    def calculate_ambient_occlusion(self):
+        print('Calculating ambient occlusion')
+        blurred_height_map = gaussian_filter(self.height_map, sigma=self.resolution[1]/20)
+        self.ambient_occlusion = self.height_map - blurred_height_map + 1
+        print('Ambient occlusion calculated')
+
+    def combine_layers(self):
+        self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
+                                             * self.direct_lighting)
 
     def save_image(self):
         """

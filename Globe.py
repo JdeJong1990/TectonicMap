@@ -21,7 +21,7 @@ class Globe:
         self.normal_map = self.initialize_map_3(1, 0, 0)
         self.color_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), 0)
         self.altitude_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
-        self.altitude_factor = 0.1  # How big it the relief on the earth surface, relative to the radius of the earth
+        self.altitude_factor = 5.0  # How big it the relief on the earth surface, relative to the radius of the earth
         self.make_globe_layers()
 
     def initialize_map_3(self, first_value, second_value, third_value):
@@ -35,11 +35,10 @@ class Globe:
         for x in range(int(2 * self.radius_in_pixels)):
             for y in range(int(2 * self.radius_in_pixels)):
                 centered_globe_position = RelativePosition( x/self.radius_in_pixels -1 , y/self.radius_in_pixels - 1)
-                self.normal_map[x, y] = self.calculate_normal_vector(centered_globe_position)
+                self.normal_map[x, y]       = self.calculate_normal_vector(centered_globe_position)
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
-                self.altitude_map[x, y] = self.calculate_altitude(centered_globe_position)
-                
-                self.color_map[x, y, :] = self.calculate_color(centered_globe_position)
+                self.altitude_map[x, y]     = self.calculate_altitude(centered_globe_position)
+                self.color_map[x, y, :]     = self.calculate_color(centered_globe_position)
     
     def calculate_normal_vector(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
