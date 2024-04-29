@@ -65,17 +65,18 @@ class Globe:
     def calculate_altitude(self, centered_globe_position):
         relative_position = self.mask_position_on_globe(centered_globe_position)
         normalized_altitude = float(Globe.elevation_model.color_image[int(relative_position.x*Globe.elevation_model.color_image.shape[1]), 
-                                   int(relative_position.y*Globe.elevation_model.color_image.shape[1])][0]) / 255
+                                                                      int(relative_position.y*Globe.elevation_model.color_image.shape[1])][0]) / 255
 
         return normalized_altitude
 
     def calculate_color(self, centered_globe_position):
         relative_position = self.mask_position_on_globe(centered_globe_position)
-        
-        # Check if the pixel is on the plate
-        return Globe.color_file.color_image[int(relative_position.x*Globe.color_file.color_image.shape[1]), 
-                                             int(relative_position.y*Globe.color_file.color_image.shape[1]),
-                                             :]
+        color = Globe.color_file.color_image[int(relative_position.x*Globe.color_file.color_image.shape[1]), 
+                                            int(relative_position.y*Globe.color_file.color_image.shape[1]),
+                                            :]
+        ones = np.ones(3)
+        lighter_color = (ones - 0.5*(ones - color/255))*255
+        return lighter_color
 
     def mask_position_on_globe(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
@@ -140,6 +141,7 @@ class Globe:
         pixel_object.normal_vector = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         pixel_object.color         =  self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
         pixel_object.height = self.calculate_height(position_on_globe_mask)
+        pixel_object.altitude    = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         return pixel_object
     
     def calculate_height(self, position_on_globe_mask):

@@ -34,6 +34,8 @@ class Poster:
 
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         
+        self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+
         self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
 
@@ -77,12 +79,14 @@ class Poster:
         self.normal_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.normal_vector
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
         self.color_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
-
+        self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
+        
     def calculate_ambient_occlusion(self):
-        print('Calculating ambient occlusion')
-        blurred_height_map = gaussian_filter(self.height_map, sigma=self.resolution[1]/20)
-        self.ambient_occlusion = self.height_map - blurred_height_map + 1
-        print('Ambient occlusion calculated')
+        altitude_map = self.altitude_map
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/100)
+        ambient_occlusion = altitude_map - blurred_altitude_map
+        ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
+        self.ambient_occlusion = ambient_occlusion
 
     def combine_layers(self):
         self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
