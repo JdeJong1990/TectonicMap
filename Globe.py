@@ -74,9 +74,7 @@ class Globe:
         color = Globe.color_file.color_image[int(relative_position.x*Globe.color_file.color_image.shape[1]), 
                                             int(relative_position.y*Globe.color_file.color_image.shape[1]),
                                             :]
-        ones = np.ones(3)
-        lighter_color = (ones - 0.5*(ones - color/255))*255
-        return lighter_color
+        return color
 
     def mask_position_on_globe(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y

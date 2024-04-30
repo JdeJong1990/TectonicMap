@@ -91,29 +91,38 @@ class Poster:
     def combine_layers(self):
         self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
                                              * self.direct_lighting)
+        print('Image rendered')
 
-    def save_image(self):
+    def save_image(self, image_matrix = None):
         """
         Saves the RGB image, ensuring all pixel values are clipped within the valid range
         for an 8-bit image (0 to 255). 
         """ 
+        if image_matrix is None:
+            image_matrix = self.poster_pixels
+        else:
+            # Normalize the image matrix to the range 0 to 255
+            normalized = (image_matrix - np.min(image_matrix)) / (np.max(image_matrix) - np.min(image_matrix))
+            image_matrix = normalized * 255
+            image_matrix = np.repeat(image_matrix[:, :, np.newaxis], 3, axis=2)
+    
         # Ensure all pixel values are within the 0 to 255 range
-        clipped_pixels = np.clip(self.poster_pixels, 0, 255)
+        clipped_pixels = np.clip(image_matrix, 0, 255)
         clipped_pixels = clipped_pixels.astype(np.uint8)
 
         # Create an RGB image from the clipped pixel data
         image = Image.fromarray(clipped_pixels, 'RGB')
 
         image = image.transpose(Image.TRANSPOSE)
-        
+
         save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir, 'images')
-    
+
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        
+
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         full_save_path = os.path.join(save_path, f'poster_image_{timestamp}.png')
-        
+
         # Save the image
         image.save(full_save_path)
 
