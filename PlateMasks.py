@@ -4,6 +4,11 @@ from PIL import Image
 import os
 
 class PlateMasks:
+    """ 
+    This class loads the masks of the tectonic plates from an image file.
+    The masks are used to determine which pixels belong to which tectonic plate.
+    The image is an world map where each tectonic plate is represented by a unique grayscale value.
+    """
     masks_folder = os.path.join(os.path.dirname(os.getcwd()), "resources")
     
     def __init__(self, masks_name = "test03_NoLines.png"):
@@ -28,10 +33,10 @@ class PlateMasks:
         # Find the first and last rows and columns that are not white
         map_selection = np.where(self.color_image != 255)
 
-        first_row = map_selection[0][0]
-        last_row = map_selection[0][-1]
-        first_col = map_selection[1][0]
-        last_col = map_selection[1][-1]
+        first_row = map_selection[0][0] + 1
+        last_row = map_selection[0][-1] - 1 
+        first_col = map_selection[1][0] + 1
+        last_col = map_selection[1][-1] - 1
 
         # Crop the image
         cropped_image = self.color_image[first_row:last_row, first_col:last_col]
@@ -40,6 +45,9 @@ class PlateMasks:
         self.index_plates()
 
     def index_plates(self):
+        """ 
+        This method indexes the tectonic plates in the image.
+        """
         # Get the unique values and their counts
         unique_values, counts = np.unique(self.color_image, return_counts=True)
 

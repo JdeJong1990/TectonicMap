@@ -4,6 +4,11 @@ from PIL import Image
 import os
 
 class DigitalElevationModel:
+    """
+    Class for loading the digital elevation model of the globe.
+    This is a height map of the globe that shows the altitude of the different regions of the world.
+    The height map is a greyscale image where the color of each pixel represents the altitude of the corresponding region.
+    """
     masks_folder = os.path.join(os.path.dirname(os.getcwd()), "resources")
     
     def __init__(self, file_name = "DEM_earth.png"):

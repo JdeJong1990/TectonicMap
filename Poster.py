@@ -14,8 +14,12 @@ from PlateMasks import PlateMasks
 from scipy.ndimage import gaussian_filter
 
 class Poster:
+    """
+    This class is used to create a poster with a specific resolution.
+    The poster is created by combining multiple globes, each representing a tectonic plate.
+    """
     def __init__(self, resolution):
-        """Initialize the poster with a specific resolution."""
+        #Initialize the poster with a specific resolution.
         self.resolution = resolution
         self.relative_radius = 0.25
         self.globes = []
@@ -23,19 +27,15 @@ class Poster:
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
 
         self.color_map = np.zeros((resolution[0], resolution[1], 3), dtype=np.uint8)*255
-        # self.color_map[:,:,0] = 135
-        # self.color_map[:,:,1] = 206
-        # self.color_map[:,:,2] = 235
         
         self.masks = PlateMasks()
 
+        # Create different layers for the poster, that are combined to create the final image
         self.normal_map = np.zeros((resolution[0], resolution[1], 3))
         self.normal_map[:,:,0] = 1
 
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        
         self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-
         self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
 
@@ -65,6 +65,7 @@ class Poster:
         self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
+        # Fill the different layers of the poster with data, based on pixel objects from the globes
         for globe in self.globes:
             position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
                                        - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
@@ -73,6 +74,7 @@ class Poster:
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
     
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
+        # Store the pixel data in the different layers of the poster
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
         self.direct_lighting = lighting_factor
         
@@ -82,6 +84,7 @@ class Poster:
         self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
         
     def calculate_ambient_occlusion(self):
+        # Approximate ambient occlusion with a spacial high pass filter on the altitude map
         altitude_map = self.altitude_map
         blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/100)
         ambient_occlusion = altitude_map - blurred_altitude_map
@@ -91,8 +94,7 @@ class Poster:
     def combine_layers(self):
         self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
                                              * self.direct_lighting)
-        print('Image rendered')
-
+        
     def save_image(self, image_matrix = None):
         """
         Saves the RGB image, ensuring all pixel values are clipped within the valid range

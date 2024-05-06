@@ -1,9 +1,12 @@
-#%%
 import numpy as np
 
 from Coordinates import Coordinates
+
 class Plate:
     def __init__(self, mask):
+        """
+        This class represents a tectonic plate. 
+        """
         self.mask = mask
         self.center_coordinate = None
 
@@ -12,9 +15,11 @@ class Plate:
     def find_center(self):
         """
         Find the center of the tectonic plate
-        Go through the mask, every pixel that is part of the plate is converted to a vector.
+        Go through the mask, every pixel that is part of the plate is converted to a 3D vector.
         The average of those vectors represents the center of the plate.
         Convert that back to a coordinate.
+
+        Like this center represents the center of mass of the surface.
         """
         width = self.mask.shape[0]
         height = self.mask.shape[1]
@@ -43,4 +48,3 @@ class Plate:
         latitude_rad = np.arcsin(vector[2] / np.linalg.norm(vector))
         return Coordinates(longitude_rad, latitude_rad)
 
-#test

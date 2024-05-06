@@ -3,6 +3,9 @@ from PIL import Image
 import os
 
 class ImportImage:
+    """
+    This class is used to import an image and convert it to a numpy array.
+    """
     image_folder = os.path.join(os.path.dirname(os.getcwd()), "resources")
     
     def __init__(self, file_name = "true_color01.png"):

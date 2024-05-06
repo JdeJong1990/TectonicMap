@@ -1,9 +1,12 @@
-#%%
 import numpy as np
 from PIL import Image
 import os
 
 class ColorMap:
+    """
+    Class for loading the color map of the globe.
+    The colormap is a world map that shows the colors of the different regions of the world.
+    """
     masks_folder = os.path.join(os.path.dirname(os.getcwd()), "resources")
     
     def __init__(self, file_name = "true_color01.png"):
@@ -11,12 +14,12 @@ class ColorMap:
         self.file_path = os.path.join(self.masks_folder, file_name)
         self.color_image = None
 
-        self.load_masks()
+        self.load_image()
 
-    def load_masks(self):
+    def load_image(self):
         color_image = Image.open(self.file_path)
 
-        # Convert the image to a numpy array and isolate the red channel
+        # Convert the image to a numpy array 
         color_image_np = np.array(color_image)
         self.color_image = color_image_np[:, :, 0]
         self.crop_image()
@@ -35,4 +38,4 @@ class ColorMap:
         cropped_image = self.color_image[first_row : last_row, first_col : last_col]
 
         self.color_image = np.swapaxes(cropped_image, 0, 1)
-# %%
+
