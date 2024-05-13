@@ -107,15 +107,11 @@ class Poster:
         Saves the RGB image, ensuring all pixel values are clipped within the valid range
         for an 8-bit image (0 to 255). 
         """ 
-        print("Entering save_image...")
         if image_matrix is None:
-            print("image_matrix was None, using self.poster_pixels.")
             image_matrix = self.poster_pixels
             if image_matrix is None:
-                print("self.poster_pixels is also None. Cannot save image.")
                 return
-            print("self.poster_pixels used.")
-
+            
         # Check if the matrix has data and print its shape
         if image_matrix is not None:
             print("image_matrix is not None. Shape:", image_matrix.shape)
@@ -125,19 +121,15 @@ class Poster:
 
         # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
         if image_matrix is not self.poster_pixels:
-            print("Normalizing image_matrix...")
             if np.min(image_matrix) != np.max(image_matrix):  # Avoid division by zero
                 normalized = (image_matrix - np.min(image_matrix)) / (np.max(image_matrix) - np.min(image_matrix))
                 image_matrix = normalized * 255
             else:
                 image_matrix = np.zeros_like(image_matrix)  # If all values are the same, create a zero image
-            print("Normalization complete.")
-
             # Expand grayscale (2D) to RGB (3D) if necessary
             if len(image_matrix.shape) == 2:
                 image_matrix = np.repeat(image_matrix[:, :, np.newaxis], 3, axis=2)
-                print("Expanded grayscale to RGB.")
-
+                
         # Ensure all pixel values are within the 0 to 255 range
         clipped_pixels = np.clip(image_matrix, 0, 255)
         clipped_pixels = clipped_pixels.astype(np.uint8)
