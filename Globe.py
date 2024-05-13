@@ -162,8 +162,12 @@ class Globe:
     def calculate_height(self, position_on_globe_mask):
         # This method looks up the height of a pixel on the globe
         position_altitude = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
-        shell_height = np.sqrt(self.radius_in_pixels**2
+        height_squared = (self.radius_in_pixels**2
                      - (position_on_globe_mask.x - self.radius_in_pixels)**2 
-                     - (position_on_globe_mask.y - self.radius_in_pixels)**2) / self.radius_in_pixels
+                     - (position_on_globe_mask.y - self.radius_in_pixels)**2)
+        if height_squared > 0:
+            shell_height = np.sqrt(height_squared) / self.radius_in_pixels
+        else:
+            shell_height = 0
 
         return position_altitude * self.altitude_factor + shell_height

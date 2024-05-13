@@ -86,6 +86,13 @@ class Poster:
     def calculate_ambient_occlusion(self):
         # Approximate ambient occlusion with a spacial high pass filter on the altitude map
         altitude_map = self.altitude_map
+        
+        non_zero_altitudes = altitude_map[altitude_map != 0]
+        mean_altitude = np.mean(non_zero_altitudes)
+        print(f"Mean altitude of non-zero values: {mean_altitude}\n")
+        print(f"Max altitude: {np.max(altitude_map)}\n")
+        print(f"Min altitude: {np.min(altitude_map)}\n")
+
         blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/100)
         ambient_occlusion = altitude_map - blurred_altitude_map
         ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
@@ -95,19 +102,42 @@ class Poster:
         self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
                                              * self.direct_lighting)
         
-    def save_image(self, image_matrix = None):
+    def save_image(self, image_matrix = None, name = 'poster_image'):
         """
         Saves the RGB image, ensuring all pixel values are clipped within the valid range
         for an 8-bit image (0 to 255). 
         """ 
+        print("Entering save_image...")
         if image_matrix is None:
+            print("image_matrix was None, using self.poster_pixels.")
             image_matrix = self.poster_pixels
+            if image_matrix is None:
+                print("self.poster_pixels is also None. Cannot save image.")
+                return
+            print("self.poster_pixels used.")
+
+        # Check if the matrix has data and print its shape
+        if image_matrix is not None:
+            print("image_matrix is not None. Shape:", image_matrix.shape)
         else:
-            # Normalize the image matrix to the range 0 to 255
-            normalized = (image_matrix - np.min(image_matrix)) / (np.max(image_matrix) - np.min(image_matrix))
-            image_matrix = normalized * 255
-            image_matrix = np.repeat(image_matrix[:, :, np.newaxis], 3, axis=2)
-    
+            print("image_matrix is None after assignment. Issue in data handling.")
+            return
+
+        # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
+        if image_matrix is not self.poster_pixels:
+            print("Normalizing image_matrix...")
+            if np.min(image_matrix) != np.max(image_matrix):  # Avoid division by zero
+                normalized = (image_matrix - np.min(image_matrix)) / (np.max(image_matrix) - np.min(image_matrix))
+                image_matrix = normalized * 255
+            else:
+                image_matrix = np.zeros_like(image_matrix)  # If all values are the same, create a zero image
+            print("Normalization complete.")
+
+            # Expand grayscale (2D) to RGB (3D) if necessary
+            if len(image_matrix.shape) == 2:
+                image_matrix = np.repeat(image_matrix[:, :, np.newaxis], 3, axis=2)
+                print("Expanded grayscale to RGB.")
+
         # Ensure all pixel values are within the 0 to 255 range
         clipped_pixels = np.clip(image_matrix, 0, 255)
         clipped_pixels = clipped_pixels.astype(np.uint8)
@@ -123,7 +153,7 @@ class Poster:
             os.makedirs(save_path)
 
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        full_save_path = os.path.join(save_path, f'poster_image_{timestamp}.png')
+        full_save_path = os.path.join(save_path, f'{timestamp}_{name}.png')
 
         # Save the image
         image.save(full_save_path)
