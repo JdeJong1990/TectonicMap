@@ -147,7 +147,11 @@ class Globe:
     
     def position_is_on_globe_mask(self, position_on_globe_mask):
         # This method checks if a pixel is on the globe mask.
-        return 0 <= position_on_globe_mask.x < 2*self.radius_in_pixels and 0 <= position_on_globe_mask.y < 2*self.radius_in_pixels
+        x_diff = position_on_globe_mask.x - self.radius_in_pixels
+        y_diff = position_on_globe_mask.y - self.radius_in_pixels
+        squared_distance = x_diff**2 + y_diff**2
+        threshold = 0.8 * self.radius_in_pixels**2
+        return squared_distance < threshold
     
     def calculate_pixel(self, position_on_globe_mask):
         # This method calculates the properties of a pixel on the globe
@@ -169,5 +173,5 @@ class Globe:
             shell_height = np.sqrt(height_squared) / self.radius_in_pixels
         else:
             shell_height = 0
-
+    
         return position_altitude * self.altitude_factor + shell_height

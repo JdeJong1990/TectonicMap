@@ -35,7 +35,7 @@ class Poster:
         self.normal_map[:,:,0] = 1
 
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+        self.altitude_map = np.ones((resolution[0], resolution[1]), dtype=np.float32)*0.35
         self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
 
@@ -87,13 +87,7 @@ class Poster:
         # Approximate ambient occlusion with a spacial high pass filter on the altitude map
         altitude_map = self.altitude_map
         
-        non_zero_altitudes = altitude_map[altitude_map != 0]
-        mean_altitude = np.mean(non_zero_altitudes)
-        print(f"Mean altitude of non-zero values: {mean_altitude}\n")
-        print(f"Max altitude: {np.max(altitude_map)}\n")
-        print(f"Min altitude: {np.min(altitude_map)}\n")
-
-        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/100)
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/200)
         ambient_occlusion = altitude_map - blurred_altitude_map
         ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
         self.ambient_occlusion = ambient_occlusion
@@ -114,9 +108,8 @@ class Poster:
             
         # Check if the matrix has data and print its shape
         if image_matrix is not None:
-            print("image_matrix is not None. Shape:", image_matrix.shape)
+            pass
         else:
-            print("image_matrix is None after assignment. Issue in data handling.")
             return
 
         # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
@@ -144,7 +137,7 @@ class Poster:
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         full_save_path = os.path.join(save_path, f'{timestamp}_{name}.png')
 
         # Save the image
