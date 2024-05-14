@@ -1,6 +1,8 @@
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 from Coordinates import Coordinates
+from Coordinates import PixelPosition
 from Coordinates import RelativePosition
 from ImportImage import ImportImage
 from LayerPixels import LayerPixels
@@ -25,8 +27,9 @@ class Globe:
         # Create a number of layers for the chosen side of the globe
         self.globe_plate_mask = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), False)
         self.normal_map = self.initialize_map_3(1, 0, 0)
-        self.color_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), 0)
-        self.altitude_map = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
+        self.color_map         = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), 0)
+        self.ambient_occlusion = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
+        self.altitude_map      = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
         self.altitude_factor = 5.0  # How big it the relief on the earth surface, relative to the radius of the earth
         
         # Fill the layers with data
@@ -48,6 +51,8 @@ class Globe:
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
                 self.altitude_map[x, y]     = self.calculate_altitude(centered_globe_position)
                 self.color_map[x, y, :]     = self.calculate_color(centered_globe_position)
+        
+        self.calculate_ambient_occlusion()
     
     def calculate_normal_vector(self, centered_globe_position):
         # A range of -1 to 1 is used to represent the globe for x and y
@@ -78,9 +83,19 @@ class Globe:
         relative_position = self.mask_position_on_globe(centered_globe_position)
         normalized_altitude = float(Globe.elevation_model.color_image[int(relative_position.x*Globe.elevation_model.color_image.shape[1]), 
                                                                       int(relative_position.y*Globe.elevation_model.color_image.shape[1])][0]) / 255
-
         return normalized_altitude
 
+    def calculate_ambient_occlusion(self):
+        # This method calculates the ambient occlusion of a pixel on the globe
+        altitude_map = self.altitude_map  
+        
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.radius_in_pixels/100)
+        ambient_occlusion = (altitude_map - blurred_altitude_map).astype(np.float32)
+        # Normalize the ambient occlusion
+        normalized_ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
+        self.ambient_occlusion = normalized_ambient_occlusion
+        print(ambient_occlusion)
+    
     def calculate_color(self, centered_globe_position):
         # This method looks up the color of a pixel on the globe
         relative_position = self.mask_position_on_globe(centered_globe_position)
@@ -157,10 +172,11 @@ class Globe:
         # This method calculates the properties of a pixel on the globe
         pixel_object = LayerPixels()
 
-        pixel_object.normal_vector = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
-        pixel_object.color         =  self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
-        pixel_object.height = self.calculate_height(position_on_globe_mask)
-        pixel_object.altitude    = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
+        pixel_object.normal_vector            = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
+        pixel_object.color                    =  self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
+        pixel_object.height                 = self.calculate_height(position_on_globe_mask)
+        pixel_object.altitude               = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
+        pixel_object.ambient_occlusion = self.ambient_occlusion[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         return pixel_object
     
     def calculate_height(self, position_on_globe_mask):

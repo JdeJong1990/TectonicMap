@@ -61,7 +61,7 @@ class Poster:
 
         print('\n')   
 
-        self.calculate_ambient_occlusion()     
+        # self.calculate_ambient_occlusion()     
         self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
@@ -82,6 +82,7 @@ class Poster:
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
         self.color_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
         self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
+        self.ambient_occlusion[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.ambient_occlusion
         
     def calculate_ambient_occlusion(self):
         # Approximate ambient occlusion with a spacial high pass filter on the altitude map
