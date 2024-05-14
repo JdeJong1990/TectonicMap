@@ -1,4 +1,3 @@
-
 from datetime import datetime
 import os
 
@@ -8,7 +7,6 @@ from PIL import Image
 from Coordinates import Coordinates
 from Coordinates import PixelPosition
 from Coordinates import RelativePosition
-
 from Globe import Globe
 from PlateMasks import PlateMasks
 from scipy.ndimage import gaussian_filter
@@ -37,7 +35,7 @@ class Poster:
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.altitude_map = np.ones((resolution[0], resolution[1]), dtype=np.float32)*0.35
         self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+        self.ambient_occlusion = np.ones((resolution[0], resolution[1]), dtype=np.float32)
 
         self.poster_pixels = np.zeros((resolution[0], resolution[1], 3), dtype=np.float32)
 
@@ -84,14 +82,14 @@ class Poster:
         self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
         self.ambient_occlusion[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.ambient_occlusion
         
-    def calculate_ambient_occlusion(self):
-        # Approximate ambient occlusion with a spacial high pass filter on the altitude map
-        altitude_map = self.altitude_map
+    # def calculate_ambient_occlusion(self):
+    #     # Approximate ambient occlusion with a spacial high pass filter on the altitude map
+    #     altitude_map = self.altitude_map
         
-        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/200)
-        ambient_occlusion = altitude_map - blurred_altitude_map
-        ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
-        self.ambient_occlusion = ambient_occlusion
+    #     blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/200)
+    #     ambient_occlusion = altitude_map - blurred_altitude_map
+    #     ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
+    #     self.ambient_occlusion = ambient_occlusion
 
     def combine_layers(self):
         self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]

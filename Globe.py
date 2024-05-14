@@ -89,12 +89,11 @@ class Globe:
         # This method calculates the ambient occlusion of a pixel on the globe
         altitude_map = self.altitude_map  
         
-        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.radius_in_pixels/100)
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.radius_in_pixels/200)
         ambient_occlusion = (altitude_map - blurred_altitude_map).astype(np.float32)
         # Normalize the ambient occlusion
         normalized_ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
         self.ambient_occlusion = normalized_ambient_occlusion
-        print(ambient_occlusion)
     
     def calculate_color(self, centered_globe_position):
         # This method looks up the color of a pixel on the globe
