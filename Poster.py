@@ -35,7 +35,7 @@ class Poster:
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.altitude_map = np.ones((resolution[0], resolution[1]), dtype=np.float32)*0.35
         self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.ambient_occlusion = np.ones((resolution[0], resolution[1]), dtype=np.float32)
+        self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
 
         self.poster_pixels = np.zeros((resolution[0], resolution[1], 3), dtype=np.float32)
 

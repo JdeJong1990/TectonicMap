@@ -1,7 +1,7 @@
 #%%
 from Poster import Poster
 
-poster = Poster([2000, 100])
+poster = Poster([1500, 750])
 poster.render()
 print('Saving image')
 poster.save_image()
