@@ -51,7 +51,6 @@ class Globe:
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
                 self.altitude_map[x, y]     = self.calculate_altitude(centered_globe_position)
                 self.color_map[x, y, :]     = self.calculate_color(centered_globe_position)
-        
         self.calculate_ambient_occlusion()
     
     def calculate_normal_vector(self, centered_globe_position):
@@ -89,10 +88,13 @@ class Globe:
         # This method calculates the ambient occlusion of a pixel on the globe
         altitude_map = self.altitude_map  
         
-        blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.radius_in_pixels/200)
-        ambient_occlusion = (altitude_map - blurred_altitude_map).astype(np.float32)
-        # Normalize the ambient occlusion
-        # normalized_ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=np.max([self.radius_in_pixels/200,20]))
+        high_pass_altitude = (altitude_map - blurred_altitude_map).astype(np.float32)
+        
+        ambient_occlusion = -np.log(abs(high_pass_altitude) + 1e-9)*np.clip(high_pass_altitude,-0.01,0.01)
+        print(f"1: {ambient_occlusion.max()}")
+        ambient_occlusion = ambient_occlusion*20 +1
+        print(f"2: {ambient_occlusion.max()}")
         self.ambient_occlusion = ambient_occlusion
     
     def calculate_color(self, centered_globe_position):

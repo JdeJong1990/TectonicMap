@@ -56,10 +56,7 @@ class Poster:
 
             # Print the progress
             print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
-
-        print('\n')   
-
-        # self.calculate_ambient_occlusion()     
+ 
         self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
@@ -74,26 +71,19 @@ class Poster:
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         # Store the pixel data in the different layers of the poster
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
-        self.direct_lighting = lighting_factor
-        
+
+        self.direct_lighting[poster_pixel_position.x,poster_pixel_position.y] = lighting_factor
         self.normal_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.normal_vector
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
         self.color_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
         self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
         self.ambient_occlusion[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.ambient_occlusion
         
-    # def calculate_ambient_occlusion(self):
-    #     # Approximate ambient occlusion with a spacial high pass filter on the altitude map
-    #     altitude_map = self.altitude_map
-        
-    #     blurred_altitude_map = gaussian_filter(altitude_map, sigma=self.resolution[1]/200)
-    #     ambient_occlusion = altitude_map - blurred_altitude_map
-    #     ambient_occlusion = (ambient_occlusion - np.min(ambient_occlusion)) / (np.max(ambient_occlusion) - np.min(ambient_occlusion))
-    #     self.ambient_occlusion = ambient_occlusion
-
     def combine_layers(self):
-        self.poster_pixels = self.color_map * (self.ambient_occlusion[:, :, np.newaxis]
-                                             * self.direct_lighting)
+        ambient_occlusion = np.repeat(self.ambient_occlusion[:, :, np.newaxis], 3, axis=2)
+        
+        poster_pixels = np.clip(self.color_map * (ambient_occlusion), 0, 500)
+        self.poster_pixels = poster_pixels
         
     def save_image(self, image_matrix = None, name = 'poster_image'):
         """
