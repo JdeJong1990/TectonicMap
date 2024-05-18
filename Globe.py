@@ -97,7 +97,7 @@ class Globe:
         
         ambient_occlusion = -np.log(abs(high_pass_altitude) + 1e-9)*np.clip(high_pass_altitude,-0.01,0.01)
         ambient_occlusion = ambient_occlusion*20 +1
-        self.ambient_occlusion = ambient_occlusion
+        self.ambient_occlusion = ambient_occlusion/2
     
     def calculate_color(self, centered_globe_position):
         # This method looks up the color of a pixel on the globe
@@ -196,7 +196,7 @@ class Globe:
         else:
             shell_height = 0
     
-        return position_altitude * self.altitude_factor + shell_height
+        return shell_height
     
     def drop_height_map(self):
         # Take the height map and find the non-zero elements
@@ -204,10 +204,10 @@ class Globe:
 
         # Find the smallest element among the non-zero elements
         smallest_element = 0
-        try:
+        try:    # When the resolution is low, some plates don't show up on the poster, and there is no heigth
             smallest_element = np.min(non_zero_elements)
         except:
             pass
-        print('Smallest element:', smallest_element)
+
         # Lower all the non-zero elements by the smallest element
         self.height_map[np.nonzero(self.height_map)] -= smallest_element

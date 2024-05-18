@@ -25,6 +25,6 @@ poster.save_image(poster.height_map, 'height_map')
 # %%
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(poster.globes[6].height_map)
+ax.imshow(poster.poster_pixels/255)
 plt.show()
 # %%
