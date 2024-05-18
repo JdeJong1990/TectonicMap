@@ -28,10 +28,12 @@ class Globe:
         self.globe_plate_mask = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), False)
         self.normal_map = self.initialize_map_3(1, 0, 0)
         self.color_map         = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels), 3), 0)
+        self.height_map        = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
         self.ambient_occlusion = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
         self.altitude_map      = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
-        self.altitude_factor = 5.0  # How big it the relief on the earth surface, relative to the radius of the earth
+        self.altitude_factor = 0.0  # How big it the relief on the earth surface, relative to the radius of the earth
         
+
         # Fill the layers with data
         self.make_globe_layers()
 
@@ -51,6 +53,8 @@ class Globe:
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
                 self.altitude_map[x, y]     = self.calculate_altitude(centered_globe_position)
                 self.color_map[x, y, :]     = self.calculate_color(centered_globe_position)
+                self.height_map[x, y]       = self.calculate_height(PixelPosition(x,y))
+        self.drop_height_map()
         self.calculate_ambient_occlusion()
     
     def calculate_normal_vector(self, centered_globe_position):
@@ -92,9 +96,7 @@ class Globe:
         high_pass_altitude = (altitude_map - blurred_altitude_map).astype(np.float32)
         
         ambient_occlusion = -np.log(abs(high_pass_altitude) + 1e-9)*np.clip(high_pass_altitude,-0.01,0.01)
-        print(f"1: {ambient_occlusion.max()}")
         ambient_occlusion = ambient_occlusion*20 +1
-        print(f"2: {ambient_occlusion.max()}")
         self.ambient_occlusion = ambient_occlusion
     
     def calculate_color(self, centered_globe_position):
@@ -175,13 +177,16 @@ class Globe:
 
         pixel_object.normal_vector            = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         pixel_object.color                    =  self.color_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]   
-        pixel_object.height                 = self.calculate_height(position_on_globe_mask)
+        pixel_object.height                 = self.height_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         pixel_object.altitude               = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         pixel_object.ambient_occlusion = self.ambient_occlusion[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         return pixel_object
     
     def calculate_height(self, position_on_globe_mask):
         # This method looks up the height of a pixel on the globe
+        if not self.is_on_plate(position_on_globe_mask):
+            return 0
+
         position_altitude = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         height_squared = (self.radius_in_pixels**2
                      - (position_on_globe_mask.x - self.radius_in_pixels)**2 
@@ -192,3 +197,17 @@ class Globe:
             shell_height = 0
     
         return position_altitude * self.altitude_factor + shell_height
+    
+    def drop_height_map(self):
+        # Take the height map and find the non-zero elements
+        non_zero_elements = self.height_map[np.nonzero(self.height_map)]
+
+        # Find the smallest element among the non-zero elements
+        smallest_element = 0
+        try:
+            smallest_element = np.min(non_zero_elements)
+        except:
+            pass
+        print('Smallest element:', smallest_element)
+        # Lower all the non-zero elements by the smallest element
+        self.height_map[np.nonzero(self.height_map)] -= smallest_element
