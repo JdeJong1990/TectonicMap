@@ -24,7 +24,7 @@ class Poster:
 
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
 
-        self.color_map = np.zeros((resolution[0], resolution[1], 3), dtype=np.uint8)
+        self.color_map = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
         
         self.masks = PlateMasks()
 
@@ -34,10 +34,10 @@ class Poster:
 
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.direct_lighting = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.ambient_occlusion = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
+        self.direct_lighting = np.ones((resolution[0], resolution[1]), dtype=np.float32)
+        self.ambient_occlusion = np.ones((resolution[0], resolution[1]), dtype=np.float32)
 
-        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)
+        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)*255
 
         print('Creating globes')
         for plate_index in range(0, self.masks.number_of_plates):
@@ -87,9 +87,6 @@ class Poster:
 
         poster_pixels = np.clip(self.color_map * (direct_lighting*ambient_occlusion), 0, 500)
         self.poster_pixels = poster_pixels
-        print(f"max of ambient_occlusion: {np.max(ambient_occlusion)}")
-        print(f"max of direct_lighting: {np.max(direct_lighting)}")
-        print(f"max of poster_pixels: {np.max(poster_pixels)}")
         
     def save_image(self, image_matrix = None, name = 'poster_image'):
         """

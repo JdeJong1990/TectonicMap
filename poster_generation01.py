@@ -26,5 +26,6 @@ poster.save_image(poster.height_map, 'height_map')
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.imshow(poster.poster_pixels/255)
+# ax.imshow(poster.ambient_occlusion)
 plt.show()
 # %%

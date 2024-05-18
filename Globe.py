@@ -92,7 +92,7 @@ class Globe:
         # This method calculates the ambient occlusion of a pixel on the globe
         altitude_map = self.altitude_map  
         
-        blurred_altitude_map = gaussian_filter(altitude_map, sigma=np.max([self.radius_in_pixels/200,20]))
+        blurred_altitude_map = gaussian_filter(altitude_map, sigma=np.max([self.radius_in_pixels/200,3]))
         high_pass_altitude = (altitude_map - blurred_altitude_map).astype(np.float32)
         
         ambient_occlusion = -np.log(abs(high_pass_altitude) + 1e-9)*np.clip(high_pass_altitude,-0.01,0.01)
