@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from Poster import Poster
 
 #%%
-poster = Poster([100, 50])
+poster = Poster([2000, 1000])
 poster.render()
 print('Saving image')
 poster.save_image()

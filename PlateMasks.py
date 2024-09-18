@@ -7,7 +7,7 @@ class PlateMasks:
     """ 
     This class loads the masks of the tectonic plates from an image file.
     The masks are used to determine which pixels belong to which tectonic plate.
-    The image is an world map where each tectonic plate is represented by a unique grayscale value.
+    The image is a world map where each tectonic plate is represented by a unique grayscale value.
     """
     masks_folder = os.path.join(os.path.dirname(os.getcwd()), "resources")
     
@@ -23,7 +23,7 @@ class PlateMasks:
     def load_masks(self):
         color_image = Image.open(self.masks_path)
 
-        # Convert the image to a numpy array and isolate the red channel
+        # Convert the image to a numpy array and isolate the red channel (of the grayscale image)
         color_image_np = np.array(color_image)
         self.color_image = color_image_np[:, :, 0]
         self.crop_image()
@@ -68,4 +68,3 @@ class PlateMasks:
         self.number_of_plates = len(significant_values)-1
 
 
-#test
