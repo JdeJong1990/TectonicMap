@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from Poster import Poster
 
 #%%
-poster = Poster([2000, 1000])
+poster = Poster([100, 50])
 poster.render()
 print('Saving image')
 poster.save_image()
@@ -17,6 +17,7 @@ poster.save_image(poster.altitude_map, 'altitude_map')
 poster.save_image(poster.color_map, 'color_map')
 poster.save_image(poster.normal_map,'normal_map')
 poster.save_image(poster.height_map, 'height_map')
+poster.save_image(poster.cast_shadow, 'cast_shadow')
 
 # Ideas:
 # Make light from cities in the shadow parts of the globes
@@ -25,7 +26,7 @@ poster.save_image(poster.height_map, 'height_map')
 # %%
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(poster.poster_pixels/255)
+ax.imshow(poster.cast_shadow)
 # ax.imshow(poster.ambient_occlusion)
 plt.show()
 # %%

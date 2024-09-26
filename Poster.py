@@ -24,18 +24,18 @@ class Poster:
 
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
 
-        self.color_map = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
-        
         self.masks = PlateMasks()
 
         # Create different layers for the poster, that are combined to create the final image
         self.normal_map = np.zeros((resolution[0], resolution[1], 3))
         self.normal_map[:,:,0] = 1
 
+        self.color_map = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
         self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
         self.direct_lighting = np.ones((resolution[0], resolution[1]), dtype=np.float32)
         self.ambient_occlusion = np.ones((resolution[0], resolution[1]), dtype=np.float32)
+        self.cast_shadow = np.ones((resolution[0], resolution[1]), dtype=np.float32)*100
 
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)*255
 
@@ -67,23 +67,39 @@ class Poster:
             if globe.is_on_plate(position_on_globe_mask):
                 layer_pixels = globe.calculate_pixel(position_on_globe_mask)        # pixel object
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
+            
+            # Regardless of whether we hit a plate or not, we need to calculate the dropped shadow
+            # We can also only do this when we don't hit a plate
+            self.calculate_cast_shadow_distance(globe, poster_pixel_position)
     
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         # Store the pixel data in the different layers of the poster
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
 
-        self.direct_lighting[poster_pixel_position.x,poster_pixel_position.y] = lighting_factor
         self.normal_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.normal_vector
         self.height_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.height
         self.color_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.color
         self.altitude_map[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.altitude
         self.ambient_occlusion[poster_pixel_position.x,poster_pixel_position.y] = layer_pixels.ambient_occlusion
-        
+    
+    def calculate_cast_shadow_distance(self, globe, poster_pixel_position):
+        """	
+        Calculate the distance to the plate on the input Globe in the direction of the lighting vector.
+        If it hits. Store the distance in the cast_shadow layer.
+        """
+        nearest_plate = self.cast_shadow[poster_pixel_position.x, poster_pixel_position.y]
+
+        # Calculate the distance to the plate in the direction of the lighting vector
+        current_distance = globe.cast_plate_distance(poster_pixel_position, self.lighting_vector, self.resolution)
+        if current_distance:
+            if current_distance < nearest_plate:
+                self.cast_shadow[poster_pixel_position.x, poster_pixel_position.y] = current_distance
+
     def combine_layers(self):
         ambient_occlusion = np.repeat(self.ambient_occlusion[:, :, np.newaxis], 3, axis=2)
 
-        direct_lighting = np.clip(np.sum(self.normal_map * self.lighting_vector, axis=2), 0, 1)
-        direct_lighting = np.repeat(direct_lighting[:, :, np.newaxis], 3, axis=2)
+        self.direct_lighting = np.clip(np.sum(self.normal_map * self.lighting_vector, axis=2), 0, 1)
+        direct_lighting = np.repeat(self.direct_lighting[:, :, np.newaxis], 3, axis=2)
 
         poster_pixels = np.clip(self.color_map * (direct_lighting*ambient_occlusion), 0, 500)
         self.poster_pixels = poster_pixels

@@ -33,7 +33,6 @@ class Globe:
         self.altitude_map      = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
         self.altitude_factor = 0.0  # How big it the relief on the earth surface, relative to the radius of the earth
         
-
         # Fill the layers with data
         self.make_globe_layers()
 
@@ -74,7 +73,11 @@ class Globe:
             return normal_vector
 
     def globe_position_is_on_plate(self, centered_globe_position):
-        # This method checks if a pixel is on the current tectonic plate
+        """ 
+        This method checks if a pixel is on the  tectonic plate 
+        Input is a relative position on the mask (x: -1 to 1, y: -1 to 1)
+        Output is a boolean
+        """
         relative_position = self.mask_position_on_globe(centered_globe_position)
         
         # Check if the pixel is on the plate
@@ -109,8 +112,9 @@ class Globe:
 
     def mask_position_on_globe(self, centered_globe_position):
         """
-        This method converts a relative position on the globe to a position on the mask of the globe.
-        # A range of -1 to 1 is used to represent the globe for x and y on the mask of the globe
+        This method converts a position on the mask of the globe (x: -1 to 1, y: -1 to 1)
+        to a corresponding coordinate in (normalized) longitude and latitude on the globe.
+        A range of -1 to 1 is used to represent the globe for x and y on the mask of the globe
         """
         # Convert the relative globe position to a 3D vector
         squared_z_component  = 1 - centered_globe_position.x**2 - centered_globe_position.y**2
@@ -151,20 +155,20 @@ class Globe:
         return vector
     
     def vec3_to_coordinate(self, vector):
-        # Convert a 3D vector to a coordinate in longitude and latitude
+        """ Convert a 3D vector to a coordinate in longitude and latitude"""
         longitude_rad = np.arctan2(vector[1], vector[0])
         latitude_rad = np.arcsin(vector[2] / np.linalg.norm(vector))
         return Coordinates(longitude_rad, latitude_rad)
     
     def is_on_plate(self, position_on_globe_mask):
-        # This method checks if a pixel is on the current tectonic plate
+        """ This method checks if a pixel is on the current tectonic plate """
         if self.position_is_on_globe_mask(position_on_globe_mask):
             return self.globe_plate_mask[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         else:
             return False
     
     def position_is_on_globe_mask(self, position_on_globe_mask):
-        # This method checks if a pixel is on the globe mask.
+        """ This method checks if a pixel is on the globe mask."""
         x_diff = position_on_globe_mask.x - self.radius_in_pixels
         y_diff = position_on_globe_mask.y - self.radius_in_pixels
         squared_distance = x_diff**2 + y_diff**2
@@ -172,7 +176,7 @@ class Globe:
         return squared_distance < threshold
     
     def calculate_pixel(self, position_on_globe_mask):
-        # This method calculates the properties of a pixel on the globe
+        """ This method calculates the properties of a pixel on the globe"""
         pixel_object = LayerPixels()
 
         pixel_object.normal_vector            = self.normal_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
@@ -183,7 +187,7 @@ class Globe:
         return pixel_object
     
     def calculate_height(self, position_on_globe_mask):
-        # This method looks up the height of a pixel on the globe
+        """ This method looks up the height of a pixel on the globe"""
         if not self.is_on_plate(position_on_globe_mask):
             return 0
 
@@ -211,3 +215,41 @@ class Globe:
 
         # Lower all the non-zero elements by the smallest element
         self.height_map[np.nonzero(self.height_map)] -= smallest_element
+
+    def cast_plate_distance(self, poster_pixel_position, lighting_vector, resolution):
+        """ Calculate the distance to the plate in the direction of the lighting vector, if it hits """
+        direction = -lighting_vector
+        center = np.array([self.relative_center_on_poster.x, self.relative_center_on_poster.y, 0]) * resolution[1]
+        position = np.array([poster_pixel_position.x, poster_pixel_position.y, 0])
+        radius = self.radius_in_pixels
+
+        # Check if we hit the globe
+        b = -np.dot(direction, (center - position))
+        c = np.dot(center - position, center - position) - radius**2
+
+        discriminant = b**2 - c
+
+        if discriminant < 0:
+            return False
+
+        # Calculate the distance to the plate in the direction of the lighting vector
+        distance_1 = -b - np.sqrt(discriminant)
+        distance_2 = -b + np.sqrt(discriminant)
+
+        # Determine where on the mask we end up, following these distances
+        position_1 = position + distance_1 * direction
+        position_2 = position + distance_2 * direction
+
+        # Check if we hit the plate
+        relative_hit1 = (position_1 - center) / radius
+        relative_hit2 = (position_2 - center) / radius
+
+        if ((distance_1 > 0) and self.globe_position_is_on_plate(RelativePosition(relative_hit1[0], relative_hit1[1]))):
+            return distance_1
+
+        if ((distance_2 > 0) and self.globe_position_is_on_plate(RelativePosition(relative_hit2[0], relative_hit2[1]))):
+            return distance_2
+
+        return False
+            
+
