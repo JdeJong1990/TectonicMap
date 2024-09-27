@@ -97,11 +97,20 @@ class Poster:
 
     def combine_layers(self):
         ambient_occlusion = np.repeat(self.ambient_occlusion[:, :, np.newaxis], 3, axis=2)
+        height_map = np.repeat(self.height_map[:, :, np.newaxis], 3, axis=2)
 
         self.direct_lighting = np.clip(np.sum(self.normal_map * self.lighting_vector, axis=2), 0, 1)
         direct_lighting = np.repeat(self.direct_lighting[:, :, np.newaxis], 3, axis=2)
 
-        poster_pixels = np.clip(self.color_map * (direct_lighting*ambient_occlusion), 0, 500)
+        cast_shadow = np.clip(self.cast_shadow, 1, 2) *255*0.5
+        poster_pixels = np.repeat(cast_shadow[:, :, np.newaxis], 3, axis=2)
+
+        poster_pixels[height_map != 0] = self.color_map[height_map != 0] * direct_lighting[height_map != 0] * ambient_occlusion[height_map != 0]
+
+        poster_pixels *= 1.5
+        # poster_pixels = self.color_map * direct_lighting * ambient_occlusion
+        poster_pixels = np.clip(poster_pixels, 0, 300)
+
         self.poster_pixels = poster_pixels
         
     def save_image(self, image_matrix = None, name = 'poster_image'):
