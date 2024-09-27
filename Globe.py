@@ -24,6 +24,9 @@ class Globe:
         self.plate_coordinate = self.plate.center_coordinate 
         self.relative_center_on_poster = self.plate_coordinate.to_relative_position()
 
+        # Prepare a globe centere height
+        self.height_globe_center = 0.0
+
         # Create a number of layers for the chosen side of the globe
         self.globe_plate_mask = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), False)
         self.normal_map = self.initialize_map_3(1, 0, 0)
@@ -191,7 +194,7 @@ class Globe:
         if not self.is_on_plate(position_on_globe_mask):
             return 0
 
-        position_altitude = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
+        #position_altitude = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         height_squared = (self.radius_in_pixels**2
                      - (position_on_globe_mask.x - self.radius_in_pixels)**2 
                      - (position_on_globe_mask.y - self.radius_in_pixels)**2)
@@ -210,6 +213,8 @@ class Globe:
         smallest_element = 0
         try:    # When the resolution is low, some plates don't show up on the poster, and there is no heigth
             smallest_element = np.min(non_zero_elements)
+
+            self.height_globe_center = - smallest_element
         except:
             pass
 
@@ -218,8 +223,10 @@ class Globe:
 
     def cast_plate_distance(self, poster_pixel_position, lighting_vector, resolution):
         """ Calculate the distance to the plate in the direction of the lighting vector, if it hits """
-        direction = -lighting_vector
+        direction = np.array([-lighting_vector[0], lighting_vector[1], -lighting_vector[2]])
         center = np.array([self.relative_center_on_poster.x, self.relative_center_on_poster.y, 0]) * resolution[1]
+        center[2] = - self.height_globe_center * self.radius_in_pixels
+
         position = np.array([poster_pixel_position.x, poster_pixel_position.y, 0])
         radius = self.radius_in_pixels
 
@@ -245,10 +252,10 @@ class Globe:
         relative_hit2 = (position_2 - center) / radius
 
         if ((distance_1 > 0) and self.globe_position_is_on_plate(RelativePosition(relative_hit1[0], relative_hit1[1]))):
-            return distance_1
+            return distance_1/radius
 
         if ((distance_2 > 0) and self.globe_position_is_on_plate(RelativePosition(relative_hit2[0], relative_hit2[1]))):
-            return distance_2
+            return distance_2/radius
 
         return False
             
