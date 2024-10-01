@@ -40,7 +40,8 @@ class Poster:
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)*255
 
         print('Creating globes')
-        for plate_index in range(0, self.masks.number_of_plates):
+        for plate_index in [6,20,30,31,41,43,47]:
+        # for plate_index in range(0, self.masks.number_of_plates):
             self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
             
             # Print the progress
@@ -103,6 +104,8 @@ class Poster:
         direct_lighting = np.repeat(self.direct_lighting[:, :, np.newaxis], 3, axis=2)
 
         cast_shadow = np.clip(self.cast_shadow, 1, 2) *255*0.5
+        cast_shadow = gaussian_filter(cast_shadow, sigma=resolution[1]/100)
+        
         poster_pixels = np.repeat(cast_shadow[:, :, np.newaxis], 3, axis=2)
 
         poster_pixels[height_map != 0] = self.color_map[height_map != 0] * direct_lighting[height_map != 0] * ambient_occlusion[height_map != 0]
