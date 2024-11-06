@@ -1,4 +1,5 @@
 #%%
+import numpy as np
 import matplotlib
 matplotlib.use('qt5agg')  # Or use 'tkagg' if 'qt5agg' doesn't work
 import matplotlib.pyplot as plt
@@ -6,7 +7,11 @@ import matplotlib.pyplot as plt
 from Poster import Poster
 
 #%%
-poster = Poster([2000, 1000])
+
+plates = [6,15,20,30,31,41,43,47]
+relative_selection = [[0.25,1],[0.5,1]]
+relative_selection = [[0,1],[0,1]]
+poster = Poster([250, 100], plates = plates, relative_selection = relative_selection)
 poster.render()
 print('\nSaving image')
 poster.save_image()
@@ -43,9 +48,9 @@ cast_shadow = gaussian_filter(cast_shadow, sigma=poster.resolution[1]/100)
 
 poster_pixels = np.repeat(cast_shadow[:, :, np.newaxis], 3, axis=2)
 
-poster_pixels[height_map != 0] = poster.color_map[height_map != 0] 
+poster_pixels[height_map != 0] = (poster.color_map[height_map != 0] 
                                 * direct_lighting[height_map != 0] 
-                                * ambient_occlusion[height_map != 0]
+                                * ambient_occlusion[height_map != 0])
 
 poster_pixels *= 1.5
 # poster_pixels = poster.color_map * direct_lighting * ambient_occlusion

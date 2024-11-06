@@ -26,7 +26,7 @@ def vectorized_point_to_line_distance(grid_x, grid_y, l1, l2):
     
     return np.sqrt(distance_x**2 + distance_y**2)
 
-def generate_loxodrome_image_fast(resolution):
+def generate_loxodrome_image(resolution):
     """
     Generates a 2D image where the gray value represents the distance to the nearest loxodrome line,
     with anchor points arranged in a circle around the center of the image. This version avoids looping
@@ -44,7 +44,7 @@ def generate_loxodrome_image_fast(resolution):
     center = np.array([width // 2, height // 2])
     
     # Define 8 anchor points in a circle
-    num_points = 16
+    num_points = 8
     angles_circle = np.linspace(0, 2 * np.pi, num_points, endpoint=False)
     anchor_points = [center + np.array([np.cos(angle), np.sin(angle)]) * radius for angle in angles_circle]
     
@@ -78,10 +78,10 @@ def generate_loxodrome_image_fast(resolution):
 
 # Example code
 resolution = (2000, 1000)
-loxodrome_image = generate_loxodrome_image_fast(resolution)
+loxodrome_image = generate_loxodrome_image(resolution)
 
 # Plot the generated image
 plt.imshow(loxodrome_image, cmap='gray', interpolation='nearest')
-plt.title('Loxodrome Distance Map')
+plt.title('Loxodrome Map')
 plt.colorbar()
 plt.show()

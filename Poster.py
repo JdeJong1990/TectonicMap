@@ -1,4 +1,5 @@
 from datetime import datetime
+import numpy as np
 import os
 
 import numpy as np
@@ -16,9 +17,10 @@ class Poster:
     This class is used to create a poster with a specific resolution.
     The poster is created by combining multiple globes, each representing a tectonic plate.
     """
-    def __init__(self, resolution):
+    def __init__(self, resolution, plates = None, relative_selection = [[0,1],[0,1]]):
         #Initialize the poster with a specific resolution.
         self.resolution = resolution
+        self.relative_selection = np.array(relative_selection)
         self.relative_radius = 0.25
         self.globes = []
 
@@ -40,7 +42,9 @@ class Poster:
         self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)*255
 
         print('Creating globes')
-        for plate_index in [6,20,30,31,41,43,47]:
+        if (plates == None): plates = range(0, self.masks.number_of_plates)
+        
+        for plate_index in plates:
         # for plate_index in range(0, self.masks.number_of_plates):
             self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
             
@@ -50,8 +54,15 @@ class Poster:
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
         print('\nRendering image')
-        for x in range(self.resolution[0]):
-            for y in range(self.resolution[1]):
+        
+        # Calculate the integer indices for the x and y ranges
+        x_start, x_end = self.resolution[0] * self.relative_selection[0]
+        y_start, y_end = self.resolution[1] * self.relative_selection[1]
+        print(1)
+        # Iterate over each pixel within the selected range
+        for x in range(x_start.astype(int), x_end.astype(int)):
+            print(2)
+            for y in range(y_start.astype(int), y_end.astype(int)):
                 poster_pixel_position = PixelPosition(x, y)
                 self.calculate_pixel_layers(poster_pixel_position)
 
@@ -131,6 +142,13 @@ class Poster:
             pass
         else:
             return
+
+        # Calculate the slice ranges
+        x_start, x_end = (self.resolution[0] * self.relative_selection[0]).astype(int)
+        y_start, y_end = (self.resolution[1] * self.relative_selection[1]).astype(int)
+
+        # Crop the image using slicing
+        image_matrix = image_matrix[x_start:x_end, y_start:y_end, :]
 
         # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
         if image_matrix is not self.poster_pixels:
