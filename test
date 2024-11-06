@@ -1,0 +1,19 @@
+import numpy as np
+
+#%%
+resolution = [2000,1000]
+relative_selection = np.array([[0.25,0.75],[0,1]])
+
+# Calculate the integer indices for the x and y ranges
+x_start, x_end = resolution[0] * relative_selection[0]
+y_start, y_end = resolution[1] * relative_selection[1]
+
+print(x_start)
+print(x_end)
+print(y_start)
+print(y_end)
+
+x_range = range(x_start.astype(int), x_end.astype(int))
+
+for x in x_range:
+    print(x)

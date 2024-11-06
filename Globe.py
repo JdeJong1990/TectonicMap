@@ -24,6 +24,9 @@ class Globe:
         self.plate_coordinate = self.plate.center_coordinate 
         self.relative_center_on_poster = self.plate_coordinate.to_relative_position()
 
+        # Move the plate to the east to make everything fit on the poster
+        self.relative_center_on_poster.x += 0.1
+
         # Prepare a globe centere height
         self.height_globe_center = 0.0
 

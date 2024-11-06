@@ -58,10 +58,9 @@ class Poster:
         # Calculate the integer indices for the x and y ranges
         x_start, x_end = self.resolution[0] * self.relative_selection[0]
         y_start, y_end = self.resolution[1] * self.relative_selection[1]
-        print(1)
+
         # Iterate over each pixel within the selected range
         for x in range(x_start.astype(int), x_end.astype(int)):
-            print(2)
             for y in range(y_start.astype(int), y_end.astype(int)):
                 poster_pixel_position = PixelPosition(x, y)
                 self.calculate_pixel_layers(poster_pixel_position)
