@@ -21,7 +21,7 @@ class Poster:
         #Initialize the poster with a specific resolution.
         self.resolution = resolution
         self.relative_selection = np.array(relative_selection)
-        self.relative_radius = 0.25
+        self.relative_radius = 0.225
         self.globes = []
 
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
@@ -46,7 +46,12 @@ class Poster:
         
         for plate_index in plates:
         # for plate_index in range(0, self.masks.number_of_plates):
-            self.globes.append(Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius))
+            globe = Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius)
+            if plate_index == 43:
+                globe.relative_center_on_poster.y += -0.11
+                globe.relative_center_on_poster.x += 0.06
+
+            self.globes.append(globe)
             
             # Print the progress
             print(f'\r[{"#" * (plate_index * 25 // (self.masks.number_of_plates - 1))}{" " * (25 - (plate_index * 25 // (self.masks.number_of_plates - 1)))}] {plate_index/(self.masks.number_of_plates - 1)*100:.1f}%', end='')
@@ -131,6 +136,7 @@ class Poster:
         Saves the RGB image, ensuring all pixel values are clipped within the valid range
         for an 8-bit image (0 to 255). 
         """ 
+        print('Start image saving procedure.')
         if image_matrix is None:
             image_matrix = self.poster_pixels
             if image_matrix is None:
@@ -145,9 +151,12 @@ class Poster:
         # Calculate the slice ranges
         x_start, x_end = (self.resolution[0] * self.relative_selection[0]).astype(int)
         y_start, y_end = (self.resolution[1] * self.relative_selection[1]).astype(int)
-
+        
         # Crop the image using slicing
-        image_matrix = image_matrix[x_start:x_end, y_start:y_end, :]
+        if len(np.shape(image_matrix))==3:
+            image_matrix = image_matrix[x_start:x_end, y_start:y_end, :]
+        else:
+            image_matrix = image_matrix[x_start:x_end, y_start:y_end]
 
         # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
         if image_matrix is not self.poster_pixels:
@@ -157,7 +166,7 @@ class Poster:
             else:
                 image_matrix = np.zeros_like(image_matrix)  # If all values are the same, create a zero image
             # Expand grayscale (2D) to RGB (3D) if necessary
-            if len(image_matrix.shape) == 2:
+            if len(np.shape(image_matrix)) == 2:
                 image_matrix = np.repeat(image_matrix[:, :, np.newaxis], 3, axis=2)
                 
         # Ensure all pixel values are within the 0 to 255 range

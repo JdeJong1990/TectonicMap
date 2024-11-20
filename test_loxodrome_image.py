@@ -69,7 +69,7 @@ def generate_loxodrome_image(resolution, radius):
     return image
 
 # Example code
-resolution = (200, 100)
+resolution = (50, 50)
 radius = min(resolution) // 4  # Radius of the circular arrangement of anchor points
 loxodrome_image = generate_loxodrome_image(resolution, radius)
 
