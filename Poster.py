@@ -20,7 +20,7 @@ class Poster:
     def __init__(self, line_height, plates = None, relative_selection = [[0,1],[0,1]]):
         #Initialize the poster with a specific resolution.
         self.line_hight = line_height  # 1/(number of pixels vertically)
-        resolution = np.array([2, 1]) * 1/line_height
+        resolution = np.array([int(2/line_height), int(1/line_height)]) 
         self.resolution = resolution
         self.relative_selection = np.array(relative_selection)
         self.relative_radius = 0.225
@@ -80,8 +80,8 @@ class Poster:
     def calculate_pixel_layers(self, poster_pixel_position):
         # Fill the different layers of the poster with data, based on pixel objects from the globes
         for globe in self.globes:
-            position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
-                                       - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
+            # position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
+            #                            - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
             position_on_globe_mask = self.position_on_globe_mask(globe, poster_pixel_position)
             if globe.is_on_plate(position_on_globe_mask):
                 layer_pixels = globe.calculate_pixel(position_on_globe_mask)        # pixel object
@@ -93,12 +93,16 @@ class Poster:
     
     def position_on_globe_mask(self, globe, poster_pixel_position):
         """ Determine what pixel [x,y] this poster pixel position hits on the globe mask of a globe."""
-        relative_selection_tl = PixelPosition(self.relative_selection[0][0], self.relative_selection[1][0])
+        relative_selection_tl = PixelPosition(0.0 * self.relative_selection[0][0], 0.0* self.relative_selection[1][0])
+        
         line_height = self.line_hight
 
-        position_on_globe_mask = ((globe.relative_center_on_poster - relative_selection_tl)/line_height - 
-                                - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels)
-                                + poster_pixel_position)
+        relative_globe_on_poster = globe.relative_center_on_poster - relative_selection_tl
+        
+        pixel_globe_on_poster = PixelPosition(relative_globe_on_poster.x/line_height, relative_globe_on_poster.y/line_height)
+        
+        # position_on_globe_mask = (pixel_globe_on_poster - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels) + poster_pixel_position)
+        position_on_globe_mask = poster_pixel_position - (pixel_globe_on_poster - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels))
         return position_on_globe_mask            
 
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):

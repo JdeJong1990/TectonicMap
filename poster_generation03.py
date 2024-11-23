@@ -19,23 +19,30 @@ relative_selection = [[0,1],[0,1]]
 #%% antartic plate
 plates =  [4, 7, 30, 37, 41, 43, 47]
 relative_selection = [[0.5,0.8],[0.5,1]]
-poster = Poster([2200, 1000], plates = plates, relative_selection = relative_selection)
+vertical_resolution = 300
+line_height = 1/vertical_resolution
+poster = Poster(line_height, plates = plates, relative_selection = relative_selection)
 poster.render()
 print('\nSaving image')
 poster.save_image()
 
 #%% Whole poster
-poster = Poster([2000, 1000])
+
+vertical_resolution = 50
+line_height = 1/vertical_resolution
+plates = [33,40,2,21,27,6,15,20,30,31,41,43,47]
+poster = Poster(line_height, plates = plates)
 poster.render()
 poster.save_image()
 
-#%% Test around North america
+#%% Test around North american plate
 plates = [20]
 relative_selection = [[0.2,0.35],[0.05,0.35]]
-vertical_resolution = 
-poster = Poster([22892,12036], plates = plates, relative_selection = relative_selection)
+vertical_resolution = 12036
+vertical_resolution = 300
+line_height = 1/vertical_resolution
+poster = Poster(line_height, plates = plates, relative_selection = relative_selection)
 poster.render()
-print('\nSaving image')
 poster.save_image()
 
 #%% Save the different layers of the poster for debugging

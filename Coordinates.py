@@ -50,6 +50,9 @@ class PixelPosition:
         self.x = x
         self.y = y
 
+    def __add__(self, other):  # Defines the addition between two PixelPosition instances.
+        return PixelPosition(self.x + other.x, self.y + other.y)
+    
     def __sub__(self, other): #Defines the subtraction between two PixelPosition instances.
         return PixelPosition(self.x - other.x, self.y - other.y)
         
