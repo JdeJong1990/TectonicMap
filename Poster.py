@@ -17,8 +17,10 @@ class Poster:
     This class is used to create a poster with a specific resolution.
     The poster is created by combining multiple globes, each representing a tectonic plate.
     """
-    def __init__(self, resolution, plates = None, relative_selection = [[0,1],[0,1]]):
+    def __init__(self, line_height, plates = None, relative_selection = [[0,1],[0,1]]):
         #Initialize the poster with a specific resolution.
+        self.line_hight = line_height  # 1/(number of pixels vertically)
+        resolution = np.array([2, 1]) * 1/line_height
         self.resolution = resolution
         self.relative_selection = np.array(relative_selection)
         self.relative_radius = 0.225
@@ -80,6 +82,7 @@ class Poster:
         for globe in self.globes:
             position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
                                        - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
+            position_on_globe_mask = self.position_on_globe_mask(globe, poster_pixel_position)
             if globe.is_on_plate(position_on_globe_mask):
                 layer_pixels = globe.calculate_pixel(position_on_globe_mask)        # pixel object
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
@@ -88,6 +91,16 @@ class Poster:
             # We can also only do this when we don't hit a plate
             self.calculate_cast_shadow_distance(globe, poster_pixel_position)
     
+    def position_on_globe_mask(self, globe, poster_pixel_position):
+        """ Determine what pixel [x,y] this poster pixel position hits on the globe mask of a globe."""
+        relative_selection_tl = PixelPosition(self.relative_selection[0][0], self.relative_selection[1][0])
+        line_height = self.line_hight
+
+        position_on_globe_mask = ((globe.relative_center_on_poster - relative_selection_tl)/line_height - 
+                                - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels)
+                                + poster_pixel_position)
+        return position_on_globe_mask            
+
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
         # Store the pixel data in the different layers of the poster
         lighting_factor = np.clip(layer_pixels.normal_vector @ self.lighting_vector, 0, 1)
