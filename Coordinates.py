@@ -62,4 +62,7 @@ class PixelPosition:
         else:
             raise TypeError("Unsupported operand type. You can only multiply PixelPosition by an integer or float.")
 
+    def __str__(self):  # Defines the string representation for printing PixelPosition instances.
+        return f"PixelPosition(x={self.x}, y={self.y})"
+
 

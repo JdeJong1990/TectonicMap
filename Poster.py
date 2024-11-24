@@ -21,7 +21,15 @@ class Poster:
         #Initialize the poster with a specific resolution.
         self.line_hight = line_height  # 1/(number of pixels vertically)
         resolution = np.array([int(2/line_height), int(1/line_height)]) 
+        print(f'resolution: {resolution[0]}, {resolution[1]}')
         self.resolution = resolution
+
+        # size of the poster in pixels
+        size = np.array([2 * (relative_selection[0][1] - relative_selection[0][0]), relative_selection[1][1] - relative_selection[1][0]])/line_height
+        size = [int(size[0]) , int(size[1])]   
+        self.size = size
+        print(f'size of poster: {size[0]}, {size[1]}')
+
         self.relative_selection = np.array(relative_selection)
         self.relative_radius = 0.225
         self.globes = []
@@ -31,24 +39,24 @@ class Poster:
         self.masks = PlateMasks()
 
         # Create different layers for the poster, that are combined to create the final image
-        self.normal_map = np.zeros((resolution[0], resolution[1], 3))
+        self.normal_map = np.zeros((size[0], size[1], 3))
         self.normal_map[:,:,0] = 1
 
-        self.color_map = np.ones((resolution[0], resolution[1], 3), dtype=np.uint8)*255
-        self.height_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.altitude_map = np.zeros((resolution[0], resolution[1]), dtype=np.float32)
-        self.direct_lighting = np.ones((resolution[0], resolution[1]), dtype=np.float32)
-        self.ambient_occlusion = np.ones((resolution[0], resolution[1]), dtype=np.float32)
-        self.cast_shadow = np.ones((resolution[0], resolution[1]), dtype=np.float32)*10
+        self.color_map = np.ones((size[0], size[1], 3), dtype=np.uint8)*255
+        self.height_map = np.zeros((size[0], size[1]), dtype=np.float32)
+        self.altitude_map = np.zeros((size[0], size[1]), dtype=np.float32)
+        self.direct_lighting = np.ones((size[0], size[1]), dtype=np.float32)
+        self.ambient_occlusion = np.ones((size[0], size[1]), dtype=np.float32)
+        self.cast_shadow = np.ones((size[0], size[1]), dtype=np.float32)*10
 
-        self.poster_pixels = np.ones((resolution[0], resolution[1], 3), dtype=np.float32)*255
+        self.poster_pixels = np.ones((size[0], size[1], 3), dtype=np.float32)*255
 
         print('Creating globes')
         if (plates == None): plates = range(0, self.masks.number_of_plates)
         
         for plate_index in plates:
         # for plate_index in range(0, self.masks.number_of_plates):
-            globe = Globe(self.masks.masks == plate_index, radius_in_pixels = self.resolution[1]*self.relative_radius)
+            globe = Globe(self.masks.masks == plate_index, radius_in_pixels = self.relative_radius/ line_height)
             if plate_index == 43:
                 globe.relative_center_on_poster.y += -0.11
                 globe.relative_center_on_poster.x += 0.06
@@ -61,48 +69,35 @@ class Poster:
     def render(self):
         # Go through every pixel in the poster, and determine the color of the pixel
         print('\nRendering image')
-        
-        # Calculate the integer indices for the x and y ranges
-        x_start, x_end = self.resolution[0] * self.relative_selection[0]
-        y_start, y_end = self.resolution[1] * self.relative_selection[1]
-
-        # Iterate over each pixel within the selected range
-        for x in range(x_start.astype(int), x_end.astype(int)):
-            for y in range(y_start.astype(int), y_end.astype(int)):
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
                 poster_pixel_position = PixelPosition(x, y)
                 self.calculate_pixel_layers(poster_pixel_position)
 
             # Print the progress
-            print(f'\r[{"#" * (x // (self.resolution[0] // 20))}{" " * (20 - (x // (self.resolution[0] // 20)))}] {x/self.resolution[0]*100+0.5:.1f}%', end='')
+            print(f'\r[{"#" * (x // (self.size[0] // 20))}{" " * (20 - (x // (self.size[0] // 20)))}] {x/self.size[0]*100+0.5:.1f}%', end='')
  
         self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
         # Fill the different layers of the poster with data, based on pixel objects from the globes
         for globe in self.globes:
-            # position_on_globe_mask = (poster_pixel_position - globe.relative_center_on_poster*self.resolution[1] 
-            #                            - PixelPosition(-globe.radius_in_pixels, -globe.radius_in_pixels))
             position_on_globe_mask = self.position_on_globe_mask(globe, poster_pixel_position)
             if globe.is_on_plate(position_on_globe_mask):
                 layer_pixels = globe.calculate_pixel(position_on_globe_mask)        # pixel object
                 self.fill_layers_with_pixels(layer_pixels, poster_pixel_position)
             
-            # Regardless of whether we hit a plate or not, we need to calculate the dropped shadow
-            # We can also only do this when we don't hit a plate
+            # Regardless of whether we hit a plate or not, we need to calculate the dropped shadow on the background
             self.calculate_cast_shadow_distance(globe, poster_pixel_position)
     
     def position_on_globe_mask(self, globe, poster_pixel_position):
         """ Determine what pixel [x,y] this poster pixel position hits on the globe mask of a globe."""
-        relative_selection_tl = PixelPosition(0.0 * self.relative_selection[0][0], 0.0* self.relative_selection[1][0])
-        
+        # Define the pixel coordinates of the top left of the poster on the map.
         line_height = self.line_hight
-
-        relative_globe_on_poster = globe.relative_center_on_poster - relative_selection_tl
-        
-        pixel_globe_on_poster = PixelPosition(relative_globe_on_poster.x/line_height, relative_globe_on_poster.y/line_height)
-        
-        # position_on_globe_mask = (pixel_globe_on_poster - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels) + poster_pixel_position)
-        position_on_globe_mask = poster_pixel_position - (pixel_globe_on_poster - PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels))
+       
+        poster_top_left_px = PixelPosition(2 * self.relative_selection[0][0]/line_height, self.relative_selection[1][0]/line_height)
+        globe_center_map_px = PixelPosition(globe.relative_center_on_poster.x , globe.relative_center_on_poster.y) * (1/line_height)
+        position_on_globe_mask = poster_pixel_position + poster_top_left_px - globe_center_map_px + PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels)
         return position_on_globe_mask            
 
     def fill_layers_with_pixels(self, layer_pixels, poster_pixel_position):
@@ -157,24 +152,9 @@ class Poster:
         if image_matrix is None:
             image_matrix = self.poster_pixels
             if image_matrix is None:
+                print("No poster pixels in Poster object. Image saving aborted.")
                 return
             
-        # Check if the matrix has data and print its shape
-        if image_matrix is not None:
-            pass
-        else:
-            return
-
-        # Calculate the slice ranges
-        x_start, x_end = (self.resolution[0] * self.relative_selection[0]).astype(int)
-        y_start, y_end = (self.resolution[1] * self.relative_selection[1]).astype(int)
-        
-        # Crop the image using slicing
-        if len(np.shape(image_matrix))==3:
-            image_matrix = image_matrix[x_start:x_end, y_start:y_end, :]
-        else:
-            image_matrix = image_matrix[x_start:x_end, y_start:y_end]
-
         # Normalize the image matrix to the range 0 to 255 if it's not the default poster_pixels
         if image_matrix is not self.poster_pixels:
             if np.min(image_matrix) != np.max(image_matrix):  # Avoid division by zero
