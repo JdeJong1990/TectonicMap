@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from Poster import Poster
 
 #%%
-
 plates = [33,40,2,21,27,6,15,20,30,31,41,43,47]
 relative_selection = [[0.25,1],[0.5,1]]
 relative_selection = [[0,1],[0,1]]
@@ -19,7 +18,7 @@ relative_selection = [[0,1],[0,1]]
 #%% antartic plate
 plates =  [4, 7, 30, 37, 41, 43, 47]
 relative_selection = [[0.5,0.8],[0.5,1]]
-vertical_resolution = 300
+vertical_resolution = 200
 line_height = 1/vertical_resolution
 poster = Poster(line_height, plates = plates)
 poster.render(relative_selection = relative_selection)
@@ -31,11 +30,12 @@ poster.save_image()
 vertical_resolution = 200
 line_height = 1/vertical_resolution
 plates = [2,6,15,20,21,27,30,31,33,40,41,43,47]
-relative_selection = [[0.0,0.5],[0.0,0.5]]
+# relative_selection = [[0.5,1.0],[0.0,1.0]]
 relative_selection = [[0.25,0.75],[0.4,0.6]]
 # relative_selection = [[0.0,1],[0.0,1]]
 poster = Poster(line_height, plates = plates)
-poster.render(relative_selection= relative_selection)
+# poster.render(relative_selection= relative_selection)
+poster.render(relative_selection =relative_selection)
 poster.save_image()
 poster.save_image(poster.cast_shadow, 'cast_shadow')
 

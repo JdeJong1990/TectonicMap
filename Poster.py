@@ -48,11 +48,12 @@ class Poster:
 
     def render(self, relative_selection = None):
         """ Go through every pixel in the poster, and determine the color of the pixel"""
-        if relative_selection is not None:
-            self.relative_selection = relative_selection
+        if relative_selection is None:
+            relative_selection = np.array([[0,1],[0,1]])
+        self.relative_selection = relative_selection
 
         line_height = self.line_height
-
+        
         # size of the poster in pixels
         size = np.array([2 * (relative_selection[0][1] - relative_selection[0][0]), relative_selection[1][1] - relative_selection[1][0]])/line_height
         size = [int(size[0]) , int(size[1])]   
@@ -101,6 +102,7 @@ class Poster:
        
         poster_top_left_px = PixelPosition(2 * self.relative_selection[0][0]/line_height, self.relative_selection[1][0]/line_height)
         globe_center_map_px = PixelPosition(globe.relative_center_on_poster.x , globe.relative_center_on_poster.y) * (1/line_height)
+
         position_on_globe_mask = poster_pixel_position + poster_top_left_px - globe_center_map_px + PixelPosition(globe.radius_in_pixels, globe.radius_in_pixels)
         return position_on_globe_mask            
 
@@ -119,10 +121,14 @@ class Poster:
         Calculate the distance to the plate on the input Globe in the direction of the lighting vector.
         If it hits. Store the distance in the cast_shadow layer.
         """
+        # One part of the background can be in the shadow of multiple plates. So collect the currently nearest object in the direction of the lighting vector.
         nearest_plate = self.cast_shadow[poster_pixel_position.x, poster_pixel_position.y]
 
+        poster_top_left_px = PixelPosition(2 * self.relative_selection[0][0]/self.line_height, 
+                                           self.relative_selection[1][0]/self.line_height)
+
         # Calculate the distance to the plate in the direction of the lighting vector
-        current_distance = globe.cast_plate_distance(poster_pixel_position, self.lighting_vector, self.resolution)
+        current_distance = globe.cast_plate_distance(poster_pixel_position - poster_top_left_px, self.lighting_vector, self.resolution)
         if current_distance:
             if current_distance < nearest_plate:
                 self.cast_shadow[poster_pixel_position.x, poster_pixel_position.y] = current_distance
