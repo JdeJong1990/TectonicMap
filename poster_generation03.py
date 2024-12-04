@@ -34,9 +34,10 @@ plates = [2,6,15,20,21,27,30,31,33,40,41,43,47]
 relative_selection = [[0.0,0.5],[0.0,0.5]]
 relative_selection = [[0.25,0.75],[0.4,0.6]]
 # relative_selection = [[0.0,1],[0.0,1]]
-poster = Poster(line_height, plates = plates, relative_selection= relative_selection)
-poster.render()
+poster = Poster(line_height, plates = plates)
+poster.render(relative_selection= relative_selection)
 poster.save_image()
+poster.save_image(poster.cast_shadow, 'cast_shadow')
 
 #%% Test around North american plate
 plates = [20]
