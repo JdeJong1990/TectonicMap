@@ -17,41 +17,21 @@ class Poster:
     This class is used to create a poster with a specific resolution.
     The poster is created by combining multiple globes, each representing a tectonic plate.
     """
-    def __init__(self, line_height, plates = None, relative_selection = [[0,1],[0,1]]):
+    def __init__(self, line_height, plates = None):
         #Initialize the poster with a specific resolution.
-        self.line_hight = line_height  # 1/(number of pixels vertically)
-        resolution = np.array([int(2/line_height), int(1/line_height)]) 
-        print(f'resolution: {resolution[0]}, {resolution[1]}')
-        self.resolution = resolution
-
-        # size of the poster in pixels
-        size = np.array([2 * (relative_selection[0][1] - relative_selection[0][0]), relative_selection[1][1] - relative_selection[1][0]])/line_height
-        size = [int(size[0]) , int(size[1])]   
-        self.size = size
-        print(f'size of poster: {size[0]}, {size[1]}')
-
-        self.relative_selection = np.array(relative_selection)
-        self.relative_radius = 0.225
-        self.globes = []
-
+        self.line_height = line_height  # 1/(number of pixels vertically)
+        self.resolution = np.array([int(2/line_height), int(1/line_height)]) 
+        print(f'resolution of the map: {self.resolution[0]}, {self.resolution[1]}')
+        
+        self.relative_selection = np.array([[0,1],[0,1]])
+        
         self.lighting_vector = np.array([1.0, -1.0, 1.0])*np.sqrt(3)/3
 
-        self.masks = PlateMasks()
-
-        # Create different layers for the poster, that are combined to create the final image
-        self.normal_map = np.zeros((size[0], size[1], 3))
-        self.normal_map[:,:,0] = 1
-
-        self.color_map = np.ones((size[0], size[1], 3), dtype=np.uint8)*255
-        self.height_map = np.zeros((size[0], size[1]), dtype=np.float32)
-        self.altitude_map = np.zeros((size[0], size[1]), dtype=np.float32)
-        self.direct_lighting = np.ones((size[0], size[1]), dtype=np.float32)
-        self.ambient_occlusion = np.ones((size[0], size[1]), dtype=np.float32)
-        self.cast_shadow = np.ones((size[0], size[1]), dtype=np.float32)*10
-
-        self.poster_pixels = np.ones((size[0], size[1], 3), dtype=np.float32)*255
-
         print('Creating globes')
+        self.masks = PlateMasks()
+        self.relative_radius = 0.225
+        self.globes = []
+        
         if (plates == None): plates = range(0, self.masks.number_of_plates)
         
         for plate_index in plates:
@@ -66,8 +46,32 @@ class Poster:
             # Print the progress
             print(f'\r[{"#" * (plate_index * 25 // (self.masks.number_of_plates - 1))}{" " * (25 - (plate_index * 25 // (self.masks.number_of_plates - 1)))}] {plate_index/(self.masks.number_of_plates - 1)*100:.1f}%', end='')
 
-    def render(self):
-        # Go through every pixel in the poster, and determine the color of the pixel
+    def render(self, relative_selection = None):
+        """ Go through every pixel in the poster, and determine the color of the pixel"""
+        if relative_selection is not None:
+            self.relative_selection = relative_selection
+
+        line_height = self.line_height
+
+        # size of the poster in pixels
+        size = np.array([2 * (relative_selection[0][1] - relative_selection[0][0]), relative_selection[1][1] - relative_selection[1][0]])/line_height
+        size = [int(size[0]) , int(size[1])]   
+        self.size = size
+        
+        print(f'size of poster: {size[0]}, {size[1]}')
+        # Create different layers for the poster, that are combined to create the final image
+        self.normal_map = np.zeros((size[0], size[1], 3))
+        self.normal_map[:,:,0] = 1
+
+        self.color_map = np.ones((size[0], size[1], 3), dtype=np.uint8)*255
+        self.height_map = np.zeros((size[0], size[1]), dtype=np.float32)
+        self.altitude_map = np.zeros((size[0], size[1]), dtype=np.float32)
+        self.direct_lighting = np.ones((size[0], size[1]), dtype=np.float32)
+        self.ambient_occlusion = np.ones((size[0], size[1]), dtype=np.float32)
+        self.cast_shadow = np.ones((size[0], size[1]), dtype=np.float32)*10
+
+        self.poster_pixels = np.ones((size[0], size[1], 3), dtype=np.float32)*255
+
         print('\nRendering image')
         for x in range(self.size[0]):
             for y in range(self.size[1]):
@@ -93,7 +97,7 @@ class Poster:
     def position_on_globe_mask(self, globe, poster_pixel_position):
         """ Determine what pixel [x,y] this poster pixel position hits on the globe mask of a globe."""
         # Define the pixel coordinates of the top left of the poster on the map.
-        line_height = self.line_hight
+        line_height = self.line_height
        
         poster_top_left_px = PixelPosition(2 * self.relative_selection[0][0]/line_height, self.relative_selection[1][0]/line_height)
         globe_center_map_px = PixelPosition(globe.relative_center_on_poster.x , globe.relative_center_on_poster.y) * (1/line_height)
