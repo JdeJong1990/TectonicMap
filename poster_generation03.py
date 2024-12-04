@@ -22,8 +22,10 @@ vertical_resolution = 200
 line_height = 1/vertical_resolution
 poster = Poster(line_height, plates = plates)
 poster.render(relative_selection = relative_selection)
+
 print('\nSaving image')
 poster.save_image()
+poster.save_image(poster.cast_shadow, 'cast_shadow')
 
 #%% Whole poster
 
@@ -31,7 +33,7 @@ vertical_resolution = 200
 line_height = 1/vertical_resolution
 plates = [2,6,15,20,21,27,30,31,33,40,41,43,47]
 # relative_selection = [[0.5,1.0],[0.0,1.0]]
-relative_selection = [[0.25,0.75],[0.4,0.6]]
+relative_selection = [[0.1,0.9],[0.1,0.9]]
 # relative_selection = [[0.0,1],[0.0,1]]
 poster = Poster(line_height, plates = plates)
 # poster.render(relative_selection= relative_selection)

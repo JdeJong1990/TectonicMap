@@ -59,7 +59,7 @@ class Poster:
         size = [int(size[0]) , int(size[1])]   
         self.size = size
         
-        print(f'size of poster: {size[0]}, {size[1]}')
+        print(f'\nsize of poster: {size[0]}, {size[1]}')
         # Create different layers for the poster, that are combined to create the final image
         self.normal_map = np.zeros((size[0], size[1], 3))
         self.normal_map[:,:,0] = 1
@@ -128,7 +128,7 @@ class Poster:
                                            self.relative_selection[1][0]/self.line_height)
 
         # Calculate the distance to the plate in the direction of the lighting vector
-        current_distance = globe.cast_plate_distance(poster_pixel_position - poster_top_left_px, self.lighting_vector, self.resolution)
+        current_distance = globe.cast_plate_distance(poster_pixel_position + poster_top_left_px, self.lighting_vector, self.resolution)
         if current_distance:
             if current_distance < nearest_plate:
                 self.cast_shadow[poster_pixel_position.x, poster_pixel_position.y] = current_distance
