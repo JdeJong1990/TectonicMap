@@ -210,21 +210,38 @@ class Globe:
     
         return shell_height
     
-    def drop_height_map(self):
+    def drop_height_map(self, ignore_percentage=1):
+        """
+        Adjust the height map to move the minimum non-zero height closer to zero,
+        ignoring the smallest fraction of values as noise. Lay the plate down on 
+        the background so that it is not floating.
+        """
         # Take the height map and find the non-zero elements
         non_zero_elements = self.height_map[np.nonzero(self.height_map)]
+        
+        if non_zero_elements.size == 0:
+            # Handle cases where there are no non-zero elements
+            self.height_globe_center = 0
+            return
+        
+        mean_non_zero = np.mean(non_zero_elements)
+        max_non_zero = np.max(non_zero_elements)
+        minimum_value = mean_non_zero - 5*(max_non_zero - mean_non_zero)
 
-        # Find the smallest element among the non-zero elements
-        smallest_element = 0
-        try:    # When the resolution is low, some plates don't show up on the poster, and there is no heigth
-            smallest_element = np.min(non_zero_elements)
+        filtered_elements = self.height_map[self.height_map > minimum_value]
 
-            self.height_globe_center = - smallest_element
-        except:
-            pass
+        if filtered_elements.size == 0:
+            self.height_globe_center = 0
+            return
+        
+        lowest_point = np.min(filtered_elements)
+        
+        # Adjust the globe center
+        self.height_globe_center = -lowest_point
 
         # Lower all the non-zero elements by the smallest element
-        self.height_map[np.nonzero(self.height_map)] -= smallest_element
+        self.height_map[np.nonzero(self.height_map)] -= lowest_point
+
 
     def cast_plate_distance(self, poster_pixel_position, lighting_vector, resolution):
         """ Calculate the distance to the plate in the direction of the lighting vector, if it hits """
