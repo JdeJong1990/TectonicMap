@@ -16,9 +16,13 @@ class Globe:
     """
     elevation_model = ImportImage(file_name = "DEM_earth.png")
     color_file = ImportImage(file_name = "true_color01.png")
+    protrusions = [0.21, 0.19, 0.11, 0.77, 0.37, 0.08, 0.8, 0.67, 0.05, 0.43, 0.43, 0.4, 0.05, 0.35, 0.08, 1.00, 0.13, 0.53, 0.11, 0.19, 1.00, 0.11, 0.11, 0.53, 0.11, 0.13, 0.11, 0.27, 1.00, 1.00, 0.43, 0.93, 0.08, 0.08, 0.21, 0.16, 0.35, 0.16, 0.13, 0.16, 0.05, 0.99, 0.35, 1.00, 0.19, 0.43, 0.11, 0.96]
+    shell_bottoms = [0.9731, 0.9869, 0.9948, 0.9933, 0.9458, 0.9969, 0.663, 0.7988, 0.9983, 0.92, 0.9183, 0.9395, 0.9987, 0.9509, 0.9971, 0.4473, 0.9899, 0.8885, 0.9934, 0.9825, 0.508, 0.9951, 0.9948, 0.8683, 0.994, 0.9888, 0.9956, 0.9667, 0.99, 0.962, 0.9153, 0.488, 0.997, 0.9975, 0.9679, 0.9875, 0.9571, 0.9893, 0.9928, 0.9902, 0.9975, 0.5629, 0.9519, 0.4474, 0.9834, 0.9248, 0.9928, 0.5582]
+                                                                                            #Here
 
-    def __init__(self, mask, radius_in_pixels):
+    def __init__(self, mask, radius_in_pixels, index = None):
         self.radius_in_pixels = radius_in_pixels
+        self.index = index
 
         self.plate = Plate(mask)        # this is an object consisting of a mask in the shape of a tectonic plate  
         self.plate_coordinate = self.plate.center_coordinate 
@@ -41,6 +45,8 @@ class Globe:
         self.altitude_map      = np.full((int(2 * self.radius_in_pixels), int(2 * self.radius_in_pixels)), 0.0, dtype=np.float32)
         self.altitude_factor = 0.0  # How big it the relief on the earth surface, relative to the radius of the earth
         
+        self.max_protrusion = 0.0
+
         # Fill the layers with data
         self.make_globe_layers()
 
@@ -53,8 +59,15 @@ class Globe:
 
     def make_globe_layers(self):
         # Fill the layers with data
-        for x in range(int(2 * self.radius_in_pixels)):
-            for y in range(int(2 * self.radius_in_pixels)):
+        if self.index is not None:
+            protrusion = Globe.protrusions[self.index]
+            fill_range = range(int((1-protrusion)*self.radius_in_pixels), int((1+protrusion)*self.radius_in_pixels))
+        else:
+            fill_range = range(int(2 * self.radius_in_pixels))
+            print('Failed to find the correct range. Filling the whole globe.')
+
+        for x in fill_range:
+            for y in fill_range:
                 centered_globe_position = RelativePosition( x/self.radius_in_pixels -1 , y/self.radius_in_pixels - 1)
                 self.normal_map[x, y]       = self.calculate_normal_vector(centered_globe_position)
                 self.globe_plate_mask[x, y] = self.globe_position_is_on_plate(centered_globe_position)
@@ -89,8 +102,14 @@ class Globe:
         relative_position = self.mask_position_on_globe(centered_globe_position)
         
         # Check if the pixel is on the plate
-        return self.plate.mask[int(relative_position.x*self.plate.mask.shape[1]), 
+        on_plate = self.plate.mask[int(relative_position.x*self.plate.mask.shape[1]), 
                                int(relative_position.y*self.plate.mask.shape[1])]
+        
+        if on_plate:   # Record the maximum protrusion of the plate
+            self.max_protrusion = max(self.max_protrusion, abs(centered_globe_position.x))
+            self.max_protrusion = max(self.max_protrusion, abs(centered_globe_position.y))
+
+        return on_plate
     
     def calculate_altitude(self, centered_globe_position):
         # This method looks up the altitude of a pixel on the globe
@@ -197,7 +216,7 @@ class Globe:
     def calculate_height(self, position_on_globe_mask):
         """ This method looks up the height of a pixel on the globe"""
         if not self.is_on_plate(position_on_globe_mask):
-            return 0
+            return 0.0
 
         #position_altitude = self.altitude_map[int(position_on_globe_mask.x), int(position_on_globe_mask.y)]
         height_squared = (self.radius_in_pixels**2
@@ -206,42 +225,26 @@ class Globe:
         if height_squared > 0:
             shell_height = np.sqrt(height_squared) / self.radius_in_pixels
         else:
-            shell_height = 0
+            shell_height = 0.0
     
         return shell_height
     
-    def drop_height_map(self, ignore_percentage=1):
+    def drop_height_map(self):
         """
         Adjust the height map to move the minimum non-zero height closer to zero,
         ignoring the smallest fraction of values as noise. Lay the plate down on 
         the background so that it is not floating.
         """
-        # Take the height map and find the non-zero elements
-        non_zero_elements = self.height_map[np.nonzero(self.height_map)]
-        
-        if non_zero_elements.size == 0:
-            # Handle cases where there are no non-zero elements
-            self.height_globe_center = 0
-            return
-        
-        mean_non_zero = np.mean(non_zero_elements)
-        max_non_zero = np.max(non_zero_elements)
-        minimum_value = mean_non_zero - 5*(max_non_zero - mean_non_zero)
+        if self.index is not None:
+            shell_bottom = Globe.shell_bottoms[self.index]
+        else:
+            shell_bottom = 0.0
 
-        filtered_elements = self.height_map[self.height_map > minimum_value]
-
-        if filtered_elements.size == 0:
-            self.height_globe_center = 0
-            return
-        
-        lowest_point = np.min(filtered_elements)
-        
         # Adjust the globe center
-        self.height_globe_center = -lowest_point
+        self.height_globe_center =- shell_bottom
 
         # Lower all the non-zero elements by the smallest element
-        self.height_map[np.nonzero(self.height_map)] -= lowest_point
-
+        self.height_map[np.nonzero(self.height_map)] -= shell_bottom
 
     def cast_plate_distance(self, poster_pixel_position, lighting_vector, resolution):
         """ Calculate the distance to the plate in the direction of the lighting vector, if it hits """

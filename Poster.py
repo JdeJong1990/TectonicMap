@@ -17,6 +17,7 @@ class Poster:
     This class is used to create a poster with a specific resolution.
     The poster is created by combining multiple globes, each representing a tectonic plate.
     """
+    plate_position_adjustments = {43: [-0.11, 0.06], 46: [-0.010, 0.025]}
     def __init__(self, line_height, plates = None):
         #Initialize the poster with a specific resolution.
         self.line_height = line_height  # 1/(number of pixels vertically)
@@ -35,16 +36,16 @@ class Poster:
         if (plates == None): plates = range(0, self.masks.number_of_plates)
         
         for plate_index in plates:
-        # for plate_index in range(0, self.masks.number_of_plates):
-            globe = Globe(self.masks.masks == plate_index, radius_in_pixels = self.relative_radius/ line_height)
-            if plate_index == 43:
-                globe.relative_center_on_poster.y += -0.11
-                globe.relative_center_on_poster.x += 0.06
+            globe = Globe(self.masks.masks == plate_index, radius_in_pixels = self.relative_radius/ line_height, index = plate_index)
+
+            if plate_index in self.plate_position_adjustments:
+                globe.relative_center_on_poster.x += self.plate_position_adjustments[plate_index][0]
+                globe.relative_center_on_poster.y += self.plate_position_adjustments[plate_index][1]
 
             self.globes.append(globe)
             
             # Print the progress
-            print(f'\r[{"#" * (plate_index * 25 // (self.masks.number_of_plates - 1))}{" " * (25 - (plate_index * 25 // (self.masks.number_of_plates - 1)))}] {plate_index/(self.masks.number_of_plates - 1)*100:.1f}%', end='')
+            if len(plates) > 1: print(f'\r[{"#" * (plate_index * 25 // (self.masks.number_of_plates - 1))}{" " * (25 - (plate_index * 25 // (self.masks.number_of_plates - 1)))}] {plate_index/(self.masks.number_of_plates - 1)*100:.1f}%', end='') 
 
     def render(self, relative_selection = None):
         """ Go through every pixel in the poster, and determine the color of the pixel"""
@@ -80,8 +81,9 @@ class Poster:
                 self.calculate_pixel_layers(poster_pixel_position)
 
             # Print the progress
-            print(f'\r[{"#" * (x // (self.size[0] // 20))}{" " * (20 - (x // (self.size[0] // 20)))}] {x/self.size[0]*100+0.5:.1f}%', end='')
- 
+            try: print(f'\r[{"#" * (x // (self.size[0] // 20))}{" " * (20 - (x // (self.size[0] // 20)))}] {x/self.size[0]*100+0.5:.1f}%', end='')
+            except: pass
+        print(f'Max shell height: {np.max(self.height_map)}, min shell height: {np.min(self.height_map)}')
         self.combine_layers()
 
     def calculate_pixel_layers(self, poster_pixel_position):
@@ -153,6 +155,8 @@ class Poster:
         poster_pixels = np.clip(poster_pixels, 0, 300)
 
         self.poster_pixels = poster_pixels
+        print(f'\nmax of height map: {np.max(self.height_map)}')
+        print(f'\nmin of height map: {np.min(self.height_map)}')
         
     def save_image(self, image_matrix = None, name = 'poster_image'):
         """
